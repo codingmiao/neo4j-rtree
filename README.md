@@ -4,13 +4,13 @@
 ## 这个项目能干什么
 
 新建空间索引
-```
-rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64);
-```
+~~~java
+RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64);
+~~~
 
 
 简洁地为node加入空间索引:
-```
+~~~java
 Transaction tx = db.beginTx();
 Node node = tx.createNode(testLabel);//新建节点
 Point geo = wkbReader.read("POINT(10 20)");
@@ -18,10 +18,10 @@ byte[] wkb = wkbWriter.write(geo);//转为wkb
 node.setProperty("geometry", wkb);//设置空间字段值,必须为wkb格式
 rTreeIndex.add(node,tx);//加入索引
 
-```
+~~~
 
 空间查询
-```
+~~~java
 //输入一个矩形范围，查询矩形覆盖的节点
 double[] bbox = new double[]{3, 1, 8, 9};
 try (Transaction tx = db.beginTx()) {
@@ -29,16 +29,27 @@ try (Transaction tx = db.beginTx()) {
         System.out.println(node.getProperty("xxxx"));
     });
 }
-```
+~~~
 
 最邻近搜索
-```
+~~~java
 施工中...
 
-```
+~~~
 
 
 ## install
+
+
+maven import in your project
+```
+<dependency>
+    <groupId>org.wowtools</groupId>
+    <artifactId>neo4j-rtree</artifactId>
+    <version>1.0</version>
+</dependency>
+```
+注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8，你需要自己编译一份适合于你的jdk的:
 clone & install
 
 ```
@@ -47,14 +58,6 @@ mvn clean install -DskipTests
 
 ```
 
-maven import in your project
-```
-<dependency>
-    <groupId>org.wowtools.neo4j</groupId>
-    <artifactId>neo4j-rtree</artifactId>
-    <version>1.0</version>
-</dependency>
-```
 
 ## 关于本项目
 本项目源码中的org.wowtools.neo4j.rtree.spatial包取自开源项目Neo4j Spatial(https://github.com/neo4j-contrib/spatial)

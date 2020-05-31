@@ -57,7 +57,7 @@ public class RtreeQuery {
      * @param tx         tx
      * @param rTreeIndex 索引
      * @param bbox       [xmin,ymin,xmax,ymax]
-     * @param visitor
+     * @param visitor 结果访问器
      */
     public static void queryByBbox(Transaction tx, RTreeIndex rTreeIndex, double[] bbox, NodeVisitor visitor) {
         RectangleIntersects bboxRectangleIntersects;
@@ -115,9 +115,9 @@ public class RtreeQuery {
      * 判断两个矩形是否相交
      * https://blog.csdn.net/szfhy/article/details/49740191
      *
-     * @param bbox1
-     * @param bbox2
-     * @return
+     * @param bbox1 [xmin,ymin,xmax,ymax]1
+     * @param bbox2 [xmin,ymin,xmax,ymax]2
+     * @return 是否相交
      */
     public static boolean bboxIntersect(double[] bbox1, double[] bbox2) {
         double x01 = bbox1[0], y01 = bbox1[1], x02 = bbox1[2], y02 = bbox1[3];

@@ -167,7 +167,7 @@ public class RTreeIndex {
     }
 
     /**
-     * 最大单次添加节点数，若add(List<Node> geomNodes, Transaction tx)方法的geomNodes超过此值，将被自动拆分为多次添加以避免栈内存溢出
+     * 最大单次添加节点数，若add(List geomNodes, Transaction tx)方法的geomNodes超过此值，将被自动拆分为多次添加以避免栈内存溢出
      */
     public static int MaxAddListSize = 1024;
 
@@ -177,11 +177,13 @@ public class RTreeIndex {
      * large inserts as has O(n) space complexity in the total tree size. It has n*log(n) time complexity. See function
      * partition for more details.) or it will insert using the method of seeded clustering, where you attempt to use the
      * existing tree structure to partition your data.
-     * <p>
-     * This is based on the Paper "Bulk Insertion for R-trees by seeded clustering" by T.Lee, S.Lee & B Moon.
+     * This is based on the Paper "Bulk Insertion for R-trees by seeded clustering" by T.Lee, S.Lee B Moon.
      * Repeated use of this strategy will lead to degraded query performance, especially if used for
      * many relatively small insertions compared to tree size. Though not worse than one by one insertion.
      * In practice, it should be fine for most uses.
+     *
+     * @param geomNodes ...
+     * @param tx        ...
      */
 
     public void add(List<Node> geomNodes, Transaction tx) {
@@ -815,6 +817,9 @@ public class RTreeIndex {
     /**
      * The leaf nodes belong to the domain model, and as such need to use
      * the layers domain-specific GeometryEncoder for decoding the envelope.
+     *
+     * @param geomNode geomNode
+     * @return env
      */
     public Envelope getLeafNodeEnvelope(Node geomNode) {
 //        throw new UnsupportedOperationException();
@@ -825,6 +830,10 @@ public class RTreeIndex {
      * The index nodes do NOT belong to the domain model, and as such need
      * to use the indexes internal knowledge of the index tree and node
      * structure for decoding the envelope.
+     *
+     * @param indexNode indexNode
+     * @param tx        tx
+     * @return env
      */
     public Envelope getIndexNodeEnvelope(Node indexNode, Transaction tx) {
         if (indexNode == null) {

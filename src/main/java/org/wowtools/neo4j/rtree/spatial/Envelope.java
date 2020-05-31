@@ -1,19 +1,19 @@
 /**
  * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j Spatial.
- *
+ * <p>
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,6 +23,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * Copy constructor
+     * @param e env
      */
     public Envelope(org.neo4j.gis.spatial.index.Envelope e) {
         super(e.getMin(), e.getMax());
@@ -30,6 +31,8 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * General constructor for the n-dimensional case
+     * @param min min
+     * @param max max
      */
     public Envelope(double[] min, double[] max) {
         super(min, max);
@@ -37,6 +40,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * General constructor for the n-dimensional case starting with a single point
+     * @param p p
      */
     public Envelope(double[] p) {
         super(p.clone(), p.clone());
@@ -44,14 +48,20 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * Special constructor for the 2D case
+     * @param xmin ...
+     * @param xmax ...
+     * @param ymin ...
+     * @param ymax ...
      */
     public Envelope(double xmin, double xmax, double ymin, double ymax) {
         super(xmin, xmax, ymin, ymax);
     }
 
     /**
-     * Note that this doesn't exclude the envelope boundary.
-     * See JTS Envelope.
+     *      * Note that this doesn't exclude the envelope boundary.
+     *      * See JTS Envelope.
+     * @param other ...
+     * @return ...
      */
     public boolean contains(Envelope other) {
         //TODO: We can remove this method and covers method if we determine why super.covers does not do boolean shortcut

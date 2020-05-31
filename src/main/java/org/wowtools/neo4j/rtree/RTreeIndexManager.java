@@ -43,7 +43,7 @@ public class RTreeIndexManager {
      * @param indexName         索引名(唯一)
      * @param geometryFieldName node中的geometry字段名
      * @param maxNodeReferences 每个树节点上最多挂几个节点
-     * @return
+     * @return RTreeIndex
      */
     public static synchronized RTreeIndex createIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences) {
         //判断索引名是否唯一
@@ -60,7 +60,7 @@ public class RTreeIndexManager {
      *
      * @param database  db
      * @param indexName 索引名
-     * @return
+     * @return RTreeIndex
      */
     public static synchronized RTreeIndex getIndex(GraphDatabaseService database, String indexName) {
         try (Transaction tx = database.beginTx()) {
@@ -81,7 +81,7 @@ public class RTreeIndexManager {
      * @param indexName         索引名(唯一)
      * @param geometryFieldName node中的geometry字段名，若已有索引，可能会和输入值不一致
      * @param maxNodeReferences 每个树节点上最多挂几个节点，若已有索引，可能会和输入值不一致
-     * @return
+     * @return RTreeIndex
      */
     public static synchronized RTreeIndex getOrCreateIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences) {
         Node rootNode;
@@ -103,8 +103,8 @@ public class RTreeIndexManager {
     /**
      * 删除索引
      *
-     * @param database
-     * @param indexName
+     * @param database db
+     * @param indexName index name
      */
     public static synchronized void dropIndex(GraphDatabaseService database, String indexName) {
         try (Transaction tx = database.beginTx()) {
