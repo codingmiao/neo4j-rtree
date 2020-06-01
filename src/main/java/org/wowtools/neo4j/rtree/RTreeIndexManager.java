@@ -16,7 +16,6 @@
  */
 package org.wowtools.neo4j.rtree;
 
-import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
@@ -24,6 +23,7 @@ import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.spatial.Envelope;
 import org.wowtools.neo4j.rtree.spatial.EnvelopeDecoder;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.GeometryBbox;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -149,39 +149,9 @@ public class RTreeIndexManager {
             } catch (ParseException e) {
                 throw new RuntimeException("pase wkb error ", e);
             }
-            Geometry bound = geometry.getEnvelope();
-            Coordinate[] coords = bound.getCoordinates();
-            double xmin, xmax, ymin, ymax;
-            if (coords.length > 1) {
-                xmin = Double.MAX_VALUE;
-                ymin = Double.MAX_VALUE;
-                xmax = Double.MIN_VALUE;
-                ymax = Double.MIN_VALUE;
-                for (Coordinate coordinate : coords) {
-                    double x = coordinate.x;
-                    double y = coordinate.y;
-                    if (x < xmin) {
-                        xmin = x;
-                    }
-                    if (y < ymin) {
-                        ymin = y;
-                    }
-                    if (x > xmax) {
-                        xmax = x;
-                    }
-                    if (y > ymax) {
-                        ymax = y;
-                    }
-                }
-            } else {
-                Coordinate coord = geometry.getCoordinate();
-                xmin = coord.x;
-                ymin = coord.y;
-                xmax = coord.x;
-                ymax = coord.y;
-            }
+            GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
 
-            Envelope envelope = new Envelope(xmin, xmax, ymin, ymax);
+            Envelope envelope = new Envelope(bbox.xmin, bbox.xmax, bbox.ymin, bbox.ymax);
             return envelope;
         }
     }

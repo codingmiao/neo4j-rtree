@@ -157,7 +157,7 @@ public class QueryByBboxTest {
         index = RTreeIndexManager.createIndex(db, "lineIdx", geometryFileName, 64);
         testLine(db, index);
 
-        Scanner sin = new Scanner(System.in);
-        sin.next();
+//        Scanner sin = new Scanner(System.in);
+//        sin.next();
     }
 }

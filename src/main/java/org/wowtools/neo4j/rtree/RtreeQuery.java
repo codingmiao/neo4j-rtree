@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,8 +25,10 @@ import org.locationtech.jts.io.WKBReader;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.GeometryBbox;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -46,22 +48,43 @@ public class RtreeQuery {
     public interface NodeVisitor {
         /**
          * @param node     访问到的node
-         * @param geometry 访问到的geometry
+         * @param geometry 访问到node的geometry，由node的空间字段wkb转换而来，因为空间过滤时必须要转换一次，所以直接回传避免重复转换
          */
         void vist(Node node, Geometry geometry);
     }
 
     /**
-     * 查询与输入bbox相交的node
-     *
-     * @param tx         tx
-     * @param rTreeIndex 索引
-     * @param bbox       [xmin,ymin,xmax,ymax]
-     * @param visitor 结果访问器
+     * 空间查询过滤器
      */
-    public static void queryByBbox(Transaction tx, RTreeIndex rTreeIndex, double[] bbox, NodeVisitor visitor) {
-        RectangleIntersects bboxRectangleIntersects;
-        {
+    public interface SpatialFilter {
+        /**
+         * 判断传入的geometry是否满足过滤器的要求
+         *
+         * @param geometry g
+         * @return 是否满足过滤器的要求
+         */
+        boolean accept(Geometry geometry);
+
+        /**
+         * 返回空间bbox范围
+         *
+         * @return [xmin, ymin, xmax, ymax]
+         */
+        double[] getBbox();
+    }
+
+    /**
+     * bbox空间过滤
+     */
+    public static class BboxSpatialFilter implements SpatialFilter {
+        protected final RectangleIntersects bboxRectangleIntersects;
+        protected final double[] bbox;
+
+        /**
+         * @param bbox [xmin,ymin,xmax,ymax]
+         */
+        public BboxSpatialFilter(double[] bbox) {
+            this.bbox = bbox;
             GeometryFactory gf = new GeometryFactory();
             Coordinate c0 = new Coordinate(bbox[0], bbox[1]);
             Polygon bboxPolygon = gf.createPolygon(new Coordinate[]{
@@ -74,6 +97,81 @@ public class RtreeQuery {
             bboxRectangleIntersects = new RectangleIntersects(bboxPolygon);
         }
 
+        @Override
+        public boolean accept(Geometry geometry) {
+            return bboxRectangleIntersects.intersects(geometry);
+        }
+
+        @Override
+        public double[] getBbox() {
+            return bbox;
+        }
+    }
+
+
+    /**
+     * geometry相交过滤
+     */
+    public static class GeometryIntersectsSpatialFilter implements SpatialFilter {
+        protected final double[] bbox;
+        protected final Geometry geometry;
+
+        /**
+         * @param geometry geometry
+         */
+        public GeometryIntersectsSpatialFilter(Geometry geometry) {
+            GeometryBbox.Bbox bboxObj = GeometryBbox.getBbox(geometry);
+            bbox = new double[]{bboxObj.xmin, bboxObj.xmax, bboxObj.ymin, bboxObj.ymax};
+            this.geometry = geometry;
+        }
+
+        @Override
+        public boolean accept(Geometry geometry) {
+            return this.geometry.intersects(geometry);
+        }
+
+        @Override
+        public double[] getBbox() {
+            return bbox;
+        }
+    }
+
+    /**
+     * 查询与输入bbox相交的node
+     *
+     * @param tx         tx
+     * @param rTreeIndex 索引
+     * @param bbox       [xmin,ymin,xmax,ymax]
+     * @param visitor    结果访问器
+     */
+    public static void queryByBbox(Transaction tx, RTreeIndex rTreeIndex, double[] bbox, NodeVisitor visitor) {
+        BboxSpatialFilter filter = new BboxSpatialFilter(bbox);
+        queryBySpatialFilter(tx, rTreeIndex, filter, visitor);
+    }
+
+    /**
+     * 查询与输入geometry相交的node
+     *
+     * @param tx         tx
+     * @param rTreeIndex 索引
+     * @param geometry   geometry
+     * @param visitor    结果访问器
+     */
+    public static void queryByGeometryIntersects(Transaction tx, RTreeIndex rTreeIndex, Geometry geometry, NodeVisitor visitor) {
+        GeometryIntersectsSpatialFilter filter = new GeometryIntersectsSpatialFilter(geometry);
+        queryBySpatialFilter(tx, rTreeIndex, filter, visitor);
+    }
+
+    /**
+     * 查询满足输入空间过滤器的node
+     *
+     * @param tx            tx
+     * @param rTreeIndex    索引
+     * @param spatialFilter 空间查询过滤器
+     * @param visitor       结果访问器
+     */
+    public static void queryBySpatialFilter(Transaction tx, RTreeIndex rTreeIndex, SpatialFilter spatialFilter, NodeVisitor visitor) {
+        double[] bbox = spatialFilter.getBbox();
         WKBReader wkbReader = new WKBReader();
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
         Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
@@ -82,30 +180,31 @@ public class RtreeQuery {
             rtreeNode = stack.pop();
             //判断当前节点的bbox是否与输入bbox相交
             double[] nodeBbox = (double[]) rtreeNode.getProperty(Constant.RtreeProperty.bbox);
+
             if (!bboxIntersect(bbox, nodeBbox)) {
                 continue;
             }
             if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
                 //若有下级索引节点,下级索引节点入栈
-                rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD).forEach((relationship) -> {
+                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
                     Node child = relationship.getEndNode();
                     stack.push(child);
-                });
+                }
             } else if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
                 //若有下级对象节点，返回结果
-                rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE).forEach((relationship) -> {
+                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
                     Node objNode = relationship.getEndNode();
-                    org.locationtech.jts.geom.Geometry geometry;
+                    Geometry geometry;
                     byte[] wkb = (byte[]) objNode.getProperty(rTreeIndex.getGeometryFieldName());
                     try {
                         geometry = wkbReader.read(wkb);
                     } catch (ParseException e) {
                         throw new RuntimeException("parse wkb error", e);
                     }
-                    if (bboxRectangleIntersects.intersects(geometry)) {
+                    if (spatialFilter.accept(geometry)) {
                         visitor.vist(objNode, geometry);
                     }
-                });
+                }
             }
 
         }
