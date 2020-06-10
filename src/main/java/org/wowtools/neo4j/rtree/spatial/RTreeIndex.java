@@ -48,6 +48,11 @@ public class RTreeIndex {
                 this.rootNodeId = rootNode.getId();
                 tx.commit();
             }
+        }else {
+            try (Transaction tx = database.beginTx()) {
+                Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode,Constant.RtreeProperty.indexName,indexName);
+                this.rootNodeId = rootNode.getId();
+            }
         }
         this.database = database;
         this.envelopeDecoder = envelopeDecoder;
@@ -1438,7 +1443,7 @@ public class RTreeIndex {
 
     private final GraphDatabaseService database;
 
-    private long rootNodeId = -1;
+    private final long rootNodeId;
     private final EnvelopeDecoder envelopeDecoder;
     private int maxNodeReferences;
     private String splitMode = GREENES_SPLIT;
