@@ -20,7 +20,10 @@
 package org.wowtools.neo4j.rtree.spatial;
 
 import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.traversal.*;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.wowtools.neo4j.rtree.Constant;
 
 import java.util.*;
@@ -48,9 +51,9 @@ public class RTreeIndex {
                 this.rootNodeId = rootNode.getId();
                 tx.commit();
             }
-        }else {
+        } else {
             try (Transaction tx = database.beginTx()) {
-                Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode,Constant.RtreeProperty.indexName,indexName);
+                Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName);
                 this.rootNodeId = rootNode.getId();
             }
         }
@@ -123,7 +126,7 @@ public class RTreeIndex {
         }
     }
 
-    public void add(Node geomNode, Transaction tx) {
+    public synchronized void add(Node geomNode, Transaction tx) {
         // initialize the search with root
         Node parent = getIndexRoot(tx);
 
@@ -191,7 +194,7 @@ public class RTreeIndex {
      * @param tx        ...
      */
 
-    public void add(List<Node> geomNodes, Transaction tx) {
+    public synchronized void add(List<Node> geomNodes, Transaction tx) {
         if (geomNodes.size() > MaxAddListSize) {
             ArrayList<Node> subList = new ArrayList<>(MaxAddListSize);
             for (Node geomNode : geomNodes) {
@@ -562,7 +565,7 @@ public class RTreeIndex {
     }
 
 
-    public void remove(long geomNodeId, boolean deleteGeomNode, boolean throwExceptionIfNotFound, Transaction tx) {
+    public synchronized void remove(long geomNodeId, boolean deleteGeomNode, boolean throwExceptionIfNotFound, Transaction tx) {
 
         Node geomNode = null;
         // getNodeById throws NotFoundException if node is already removed
@@ -653,7 +656,7 @@ public class RTreeIndex {
     }
 
 
-    public void removeAll(final boolean deleteGeomNodes, final Listener monitor, Transaction tx) {
+    public synchronized void removeAll(final boolean deleteGeomNodes, final Listener monitor, Transaction tx) {
         Node indexRoot = getIndexRoot(tx);
 
         detachGeometryNodes(deleteGeomNodes, indexRoot, monitor, tx);
@@ -675,7 +678,7 @@ public class RTreeIndex {
         totalGeometryCount = 0;
     }
 
-    public void clear(final Listener monitor, Transaction tx) {
+    public synchronized void clear(final Listener monitor, Transaction tx) {
         removeAll(false, new NullListener(), tx);
         initIndexRoot();
         initIndexMetadata();
@@ -764,22 +767,8 @@ public class RTreeIndex {
         }
     }
 
-    public SearchResults searchIndex(SearchFilter filter) {
-        try (Transaction tx = database.beginTx()) {
-            SearchEvaluator searchEvaluator = new SearchEvaluator(filter);
-            TraversalDescription td = tx.traversalDescription()
-                    .depthFirst()
-                    .relationships(RTreeRelationshipTypes.RTREE_CHILD, Direction.OUTGOING)
-                    .relationships(RTreeRelationshipTypes.RTREE_REFERENCE, Direction.OUTGOING)
-                    .evaluator(searchEvaluator);
-            Traverser traverser = td.traverse(getIndexRoot(tx));
-            SearchResults results = new SearchResults(traverser.nodes());
-            tx.commit();
-            return results;
-        }
-    }
 
-    public void visit(SpatialIndexVisitor visitor, Node indexNode, Transaction tx) {
+    private void visit(SpatialIndexVisitor visitor, Node indexNode, Transaction tx) {
         if (!visitor.needsToVisit(getIndexNodeEnvelope(indexNode, tx))) {
             return;
         }

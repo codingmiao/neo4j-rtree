@@ -65,6 +65,7 @@ public class QueryByBboxTest {
 
         //查询测试
         try (Transaction tx = db.beginTx()) {
+            rTreeIndex = RTreeIndexManager.getIndex(db,"pointIdx");
             RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
                 intersectWkt.remove(node.getProperty(wktFileName));
             });
