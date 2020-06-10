@@ -32,6 +32,8 @@ import org.wowtools.neo4j.rtree.util.GeometryBbox;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 利用rtree索引进行空间查询
@@ -226,6 +228,56 @@ public class RtreeQuery {
         double zy = Math.abs(y01 + y02 - y11 - y12);
         double y = Math.abs(y01 - y02) + Math.abs(y11 - y12);
         return (zx <= x && zy <= y);
+    }
+
+
+    /**
+     * 判断点是否与bbox相交
+     *
+     * @param bbox [xmin,ymin,xmax,ymax]1
+     * @param x    x
+     * @param y    y
+     * @return 是否相交
+     */
+    private static boolean pointInBbox(double[] bbox, double x, double y) {
+        return bbox[0] <= x && x <= bbox[2]
+                && bbox[1] <= y && y <= bbox[3];
+    }
+
+    /**
+     * 最邻近搜索。查询与输入点最近的设备，最多返回n个
+     *
+     * @param tx         tx
+     * @param rTreeIndex 索引
+     * @param x          输入点x坐标
+     * @param y          输入点y坐标
+     * @param n          最大返回node数
+     * @param visitor    结果访问器
+     */
+    public static void queryNearestN(Transaction tx, RTreeIndex rTreeIndex, double x, double y, int n, NodeVisitor visitor) {
+        Node rtreeNode = rTreeIndex.getIndexRoot(tx);
+        //判断rtree根节点的bbox是否与输入xy相交
+        double[] nodeBbox = (double[]) rtreeNode.getProperty(Constant.RtreeProperty.bbox);
+        if (!pointInBbox(nodeBbox, x, y)) {
+            return;
+        }
+        /** 1、找到输入点所属的叶子索引node **/
+        Node childNode = rtreeNode;
+        do {
+            rtreeNode = childNode;
+            //若有下级索引节点,下级索引节点pointInBbox过滤入栈
+            for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
+                Node child = relationship.getEndNode();
+                nodeBbox = (double[]) child.getProperty(Constant.RtreeProperty.bbox);
+                if (pointInBbox(nodeBbox, x, y)) {
+                    childNode = child;
+                    break;//点只会与一个bbox相交，所以可以直接break
+                }
+            }
+        } while (childNode != rtreeNode);
+        /** 2、从叶子索引node开始反向找上级索引节点并求距离 **/
+        WKBReader wkbReader = new WKBReader();
+        List<Node> possibleNodes = new LinkedList<>();//可能是最邻近的点
     }
 
 }
