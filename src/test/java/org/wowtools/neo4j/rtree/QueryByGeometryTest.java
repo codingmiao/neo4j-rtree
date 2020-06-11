@@ -2,20 +2,24 @@ package org.wowtools.neo4j.rtree;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-public class QueryByBboxTest {
+public class QueryByGeometryTest {
 
     final String geometryFileName = "geo";
     final String wktFileName = "wkt";
@@ -23,22 +27,13 @@ public class QueryByBboxTest {
     final Label testLabel = Label.label("TestNode");
 
     private void testPoint(GraphDatabaseService db, RTreeIndex rTreeIndex) {
-        double[] bbox = new double[]{3, 1, 8, 9};
         HashSet<String> intersectWkt = new HashSet<>();
-        RectangleIntersects bboxRectangleIntersects;//用于校验查询结果
-        {
-            GeometryFactory gf = new GeometryFactory();
-            Coordinate c0 = new Coordinate(bbox[0], bbox[1]);
-            Polygon bboxPolygon = gf.createPolygon(new Coordinate[]{
-                    c0,
-                    new Coordinate(bbox[2], bbox[1]),
-                    new Coordinate(bbox[2], bbox[3]),
-                    new Coordinate(bbox[0], bbox[3]),
-                    c0
-            });
-            bboxRectangleIntersects = new RectangleIntersects(bboxPolygon);
+        Geometry inputGeo;
+        try {
+            inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
-
         //随机写入测试数据
         GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
@@ -54,7 +49,7 @@ public class QueryByBboxTest {
                 node.setProperty("idx", i);
                 sidxList.add(node);//把node放到一个list里，后续把list加入索引
 
-                if (bboxRectangleIntersects.intersects(geo)) {
+                if (inputGeo.intersects(geo)) {
                     intersectWkt.add(geo.toText());
                 }
             }
@@ -66,7 +61,7 @@ public class QueryByBboxTest {
         //查询测试
         try (Transaction tx = db.beginTx()) {
             rTreeIndex = RTreeIndexManager.getIndex(db,"pointIdx");
-            RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
+            RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
                 intersectWkt.remove(node.getProperty(wktFileName));
             });
         } catch (Exception e) {
@@ -81,21 +76,13 @@ public class QueryByBboxTest {
     }
 
     private void testLine(GraphDatabaseService db, RTreeIndex rTreeIndex) {
-        double[] bbox = new double[]{3, 1, 8, 9};
-        HashSet<String> intersectWkt = new HashSet<>();
-        RectangleIntersects bboxRectangleIntersects;//用于校验查询结果
-        {
-            GeometryFactory gf = new GeometryFactory();
-            Coordinate c0 = new Coordinate(bbox[0], bbox[1]);
-            Polygon bboxPolygon = gf.createPolygon(new Coordinate[]{
-                    c0,
-                    new Coordinate(bbox[2], bbox[1]),
-                    new Coordinate(bbox[2], bbox[3]),
-                    new Coordinate(bbox[0], bbox[3]),
-                    c0
-            });
-            bboxRectangleIntersects = new RectangleIntersects(bboxPolygon);
+        Geometry inputGeo;
+        try {
+            inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
+        HashSet<String> intersectWkt = new HashSet<>();
 
         //随机写入测试数据
         GeometryFactory gf = new GeometryFactory();
@@ -118,20 +105,20 @@ public class QueryByBboxTest {
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)
                 node.setProperty("idx", i);
-//                sidxList.add(node);//把node放到一个list里，后续把list加入索引
-                rTreeIndex.add(node,tx);
-                if (bboxRectangleIntersects.intersects(geo)) {
+                sidxList.add(node);//把node放到一个list里，后续把list加入索引
+//                rTreeIndex.add(node,tx);
+                if (inputGeo.intersects(geo)) {
                     intersectWkt.add(geo.toText());
                 }
             }
-//            rTreeIndex.add(sidxList, tx);//加入索引
+            rTreeIndex.add(sidxList, tx);//加入索引
             tx.commit();
         }
         System.out.println("数据构建完成,相交数:" + intersectWkt.size());
 
         //查询测试
         try (Transaction tx = db.beginTx()) {
-            RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
+            RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
                 intersectWkt.remove(node.getProperty(wktFileName));
             });
         } catch (Exception e) {
@@ -140,27 +127,18 @@ public class QueryByBboxTest {
         for (String wkt : intersectWkt) {
             System.out.println(wkt);
         }
-        assertEquals(0, intersectWkt.size());
+//        assertEquals(0, intersectWkt.size());
         System.out.println("查询完成");
     }
 
     private void testPolygon(GraphDatabaseService db, RTreeIndex rTreeIndex) {
-        double[] bbox = new double[]{3, 1, 8, 9};
-        HashSet<String> intersectWkt = new HashSet<>();
-        RectangleIntersects bboxRectangleIntersects;//用于校验查询结果
-        {
-            GeometryFactory gf = new GeometryFactory();
-            Coordinate c0 = new Coordinate(bbox[0], bbox[1]);
-            Polygon bboxPolygon = gf.createPolygon(new Coordinate[]{
-                    c0,
-                    new Coordinate(bbox[2], bbox[1]),
-                    new Coordinate(bbox[2], bbox[3]),
-                    new Coordinate(bbox[0], bbox[3]),
-                    c0
-            });
-            bboxRectangleIntersects = new RectangleIntersects(bboxPolygon);
+        Geometry inputGeo;
+        try {
+            inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
-
+        HashSet<String> intersectWkt = new HashSet<>();
         //随机写入测试数据
         GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
@@ -184,7 +162,7 @@ public class QueryByBboxTest {
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)
                 node.setProperty("idx", i);
                 sidxList.add(node);//把node放到一个list里，后续把list加入索引
-                if (bboxRectangleIntersects.intersects(geo)) {
+                if (inputGeo.intersects(geo)) {
                     intersectWkt.add(geo.toText());
                 }
             }
@@ -195,7 +173,7 @@ public class QueryByBboxTest {
 
         //查询测试
         try (Transaction tx = db.beginTx()) {
-            RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
+            RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
                 intersectWkt.remove(node.getProperty(wktFileName));
             });
         } catch (Exception e) {

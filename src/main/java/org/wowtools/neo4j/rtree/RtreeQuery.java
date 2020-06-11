@@ -121,7 +121,7 @@ public class RtreeQuery {
          */
         public GeometryIntersectsSpatialFilter(Geometry geometry) {
             GeometryBbox.Bbox bboxObj = GeometryBbox.getBbox(geometry);
-            bbox = new double[]{bboxObj.xmin, bboxObj.xmax, bboxObj.ymin, bboxObj.ymax};
+            bbox = new double[]{bboxObj.xmin, bboxObj.ymin, bboxObj.xmax, bboxObj.ymax};
             this.geometry = geometry;
         }
 
