@@ -1,8 +1,15 @@
 package org.wowtools.neo4j.rtree;
 
+import org.locationtech.jts.geom.Geometry;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.wowtools.neo4j.rtree.nearest.DistanceResult;
+import org.wowtools.neo4j.rtree.nearest.NearestNeighbour;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+
+import java.util.List;
+
+import static org.bouncycastle.asn1.x500.style.RFC4519Style.dc;
 
 /**
  * @author liuyu
@@ -21,7 +28,7 @@ public class RtreeNearestQuery {
          * @param node 节点
          * @return 返回false则忽略此节点
          */
-        boolean accept(Node node);
+        boolean accept(Node node, Geometry geometry);
     }
 
     /**
@@ -35,6 +42,10 @@ public class RtreeNearestQuery {
      * @param n          最大返回node数
      * @param nodeFilter 节点过滤器
      */
-    public static void queryNearestN(Transaction tx, RTreeIndex rTreeIndex, double x, double y, int n, NodeFilter nodeFilter) {
+    public static List<DistanceResult> queryNearestN(Transaction tx, RTreeIndex rTreeIndex, double x, double y, int n, NodeFilter nodeFilter) {
+        Node rtreeNode = rTreeIndex.getIndexRoot(tx);
+        NearestNeighbour nn =
+                new NearestNeighbour(nodeFilter, n, rtreeNode, x, y, rTreeIndex.getGeometryFieldName());
+        return nn.find();
     }
 }

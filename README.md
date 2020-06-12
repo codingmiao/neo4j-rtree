@@ -16,7 +16,7 @@ Node node = tx.createNode(testLabel);//新建节点
 Point geo = wkbReader.read("POINT(10 20)");
 byte[] wkb = wkbWriter.write(geo);//转为wkb
 node.setProperty("geometry", wkb);//设置空间字段值,必须为wkb格式
-rTreeIndex.add(node,tx);//加入索引
+rTreeIndex.add(node,tx);//加入索引(效率起见，多个node的话用list add，详见测试用例)
 
 ~~~
 
@@ -43,9 +43,21 @@ try (Transaction tx = db.beginTx()) {
 
 最邻近搜索
 ~~~java
-施工中...
+//查询距离点(10.2, 13.2)最近的5个node
+try (Transaction tx = db.beginTx()) {
+    List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> true);
+    System.out.println(res);
+}
 
 ~~~
+~~~java
+//查询满足约束条件且距离点(10.2, 13.2)最近的5个node
+try (Transaction tx = db.beginTx()) {
+    List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> geometry.getCoordinate().x<10);
+    System.out.println(res);//DistanceResult里包含了node、距离以及geometry，详见测试用例
+}
+~~~
+
 
 
 ## install
@@ -56,7 +68,7 @@ maven import in your project
 <dependency>
     <groupId>org.wowtools</groupId>
     <artifactId>neo4j-rtree</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 ```
 注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8，你需要自己编译一份适合于你的jdk的:
