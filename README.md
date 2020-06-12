@@ -31,6 +31,16 @@ try (Transaction tx = db.beginTx()) {
 }
 ~~~
 
+~~~java
+//输入一个geometry，查询geometry覆盖的节点
+Geometry inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
+try (Transaction tx = db.beginTx()) {
+    RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
+        System.out.println(node.getProperty("xxxx"));
+    });
+}
+~~~
+
 最邻近搜索
 ~~~java
 施工中...
@@ -46,10 +56,11 @@ maven import in your project
 <dependency>
     <groupId>org.wowtools</groupId>
     <artifactId>neo4j-rtree</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8，你需要自己编译一份适合于你的jdk的:
+
 clone & install
 
 ```
