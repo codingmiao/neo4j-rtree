@@ -26,6 +26,7 @@ public class RtreeNearestQuery {
          * 过滤
          *
          * @param node 节点
+         * @param geometry geometry
          * @return 返回false则忽略此节点
          */
         boolean accept(Node node, Geometry geometry);
@@ -41,6 +42,7 @@ public class RtreeNearestQuery {
      * @param y          输入点y坐标
      * @param n          最大返回node数
      * @param nodeFilter 节点过滤器
+     * @return 查询结果
      */
     public static List<DistanceResult> queryNearestN(Transaction tx, RTreeIndex rTreeIndex, double x, double y, int n, NodeFilter nodeFilter) {
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
