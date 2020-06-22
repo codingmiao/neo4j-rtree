@@ -90,3 +90,5 @@ mvn clean install -DskipTests
 
 同时，去掉了原项目中的osm、shp解析等内容，旨在使项目更精简，这个项目的理念是精简与解耦，你可以独立或集成使用geotools等工具来实现shp等文件的导入，而非与neo4j捆绑在一起。
 
+org.wowtools.neo4j.rtree.nearest包则是取自开源项目PRTree(https://github.com/EngineHub/PRTree)
+，基于分支限界法的最邻近搜索
