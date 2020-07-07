@@ -19,14 +19,7 @@
  */
 package org.wowtools.neo4j.rtree.spatial;
 
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.graphdb.traversal.Evaluator;
-import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.wowtools.neo4j.rtree.Constant;
 
 import java.util.*;
@@ -749,23 +742,31 @@ public class RTreeIndex {
 
 
     private void visit(SpatialIndexVisitor visitor, Node indexNode, Transaction tx) {
-        if (!visitor.needsToVisit(getIndexNodeEnvelope(indexNode, tx))) {
-            return;
+        Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
+        stack.push(indexNode);
+
+        while (!stack.isEmpty()) {
+            indexNode = stack.pop();
+            if (!visitor.needsToVisit(getIndexNodeEnvelope(indexNode, tx))) {
+                continue;
+            }
+            if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
+                // Node is not a leaf
+                for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
+                    Node child = rel.getEndNode();
+                    // collect children results
+                    stack.push(child);
+                }
+            } else if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
+                // Node is a leaf
+                for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
+                    visitor.onIndexReference(rel.getEndNode());
+                }
+            }
+
         }
 
-        if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
-            // Node is not a leaf
-            for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
-                Node child = rel.getEndNode();
-                // collect children results
-                visit(visitor, child, tx);
-            }
-        } else if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
-            // Node is a leaf
-            for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
-                visitor.onIndexReference(rel.getEndNode());
-            }
-        }
+
     }
 
     public Node getIndexRoot(Transaction tx) {
