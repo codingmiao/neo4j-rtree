@@ -19,6 +19,9 @@
  */
 package org.wowtools.neo4j.rtree.spatial;
 
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
@@ -719,52 +722,29 @@ public class RTreeIndex {
         }
     }
 
-    public Iterable<Node> getAllIndexInternalNodes(Transaction tx) {
-        TraversalDescription td = tx.traversalDescription()
-                .breadthFirst()
-                .relationships(RTreeRelationshipTypes.RTREE_CHILD, Direction.OUTGOING)
-                .evaluator(Evaluators.all());
-        return td.traverse(getIndexRoot(tx)).nodes();
-    }
 
-
-    public Iterable<Node> getAllIndexedNodes(Transaction tx) {
-        return new IndexNodeToGeometryNodeIterable(getAllIndexInternalNodes(tx));
-    }
-
-    private class SearchEvaluator implements Evaluator {
-        private SearchFilter filter;
-
-        public SearchEvaluator(SearchFilter filter) {
-            this.filter = filter;
-        }
-
-
-        public Evaluation evaluate(Path path) {
-            Relationship rel = path.lastRelationship();
-            Node node = path.endNode();
-            if (rel == null) {
-                return Evaluation.EXCLUDE_AND_CONTINUE;
-            } else if (rel.isType(RTreeRelationshipTypes.RTREE_CHILD)) {
-                boolean shouldContinue;
-                try (Transaction tx = database.beginTx()) {
-                    shouldContinue = filter.needsToVisit(getIndexNodeEnvelope(node, tx));
+    public List<Node> getAllIndexedNodes(Transaction tx) {
+        Node rtreeNode = getIndexRoot(tx);
+        Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
+        List<Node> list = new LinkedList<>();
+        stack.push(rtreeNode);
+        while (!stack.isEmpty()) {
+            rtreeNode = stack.pop();
+            if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
+                //若有下级索引节点,下级索引节点入栈
+                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
+                    Node child = relationship.getEndNode();
+                    stack.push(child);
                 }
-                if (shouldContinue) monitor.matchedTreeNode(path.length(), node);
-                monitor.addCase(shouldContinue ? "Index Matches" : "Index Does NOT Match");
-                return shouldContinue ?
-                        Evaluation.EXCLUDE_AND_CONTINUE :
-                        Evaluation.EXCLUDE_AND_PRUNE;
-            } else if (rel.isType(RTreeRelationshipTypes.RTREE_REFERENCE)) {
-                boolean found = filter.geometryMatches(node);
-                monitor.addCase(found ? "Geometry Matches" : "Geometry Does NOT Match");
-                if (found) monitor.setHeight(path.length());
-                return found ?
-                        Evaluation.INCLUDE_AND_PRUNE :
-                        Evaluation.EXCLUDE_AND_PRUNE;
+            } else if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
+                //若有下级对象节点，返回结果
+                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
+                    Node objNode = relationship.getEndNode();
+                    list.add(objNode);
+                }
             }
-            return null;
         }
+        return list;
     }
 
 
@@ -1449,62 +1429,6 @@ public class RTreeIndex {
         }
 
         public void onIndexReference(Node geomNode) {
-        }
-    }
-
-    /**
-     * In order to wrap one iterable or iterator in another that converts
-     * the objects from one type to another without loading all into memory,
-     * we need to use this ugly java-magic. Man, I miss Ruby right now!
-     *
-     * @author Craig
-     */
-    private class IndexNodeToGeometryNodeIterable implements Iterable<Node> {
-
-        private Iterator<Node> allIndexNodeIterator;
-
-        private class GeometryNodeIterator implements Iterator<Node> {
-
-            private Transaction tx;
-
-            public GeometryNodeIterator(Transaction tx) {
-                this.tx = tx;
-            }
-
-            Iterator<Node> geometryNodeIterator = null;
-
-            public boolean hasNext() {
-                checkGeometryNodeIterator(tx);
-                return geometryNodeIterator != null && geometryNodeIterator.hasNext();
-            }
-
-            public Node next() {
-                checkGeometryNodeIterator(tx);
-                return geometryNodeIterator == null ? null : geometryNodeIterator.next();
-            }
-
-            private void checkGeometryNodeIterator(Transaction tx) {
-                TraversalDescription td = tx.traversalDescription()
-                        .depthFirst()
-                        .relationships(RTreeRelationshipTypes.RTREE_REFERENCE, Direction.OUTGOING)
-                        .evaluator(Evaluators.excludeStartPosition())
-                        .evaluator(Evaluators.toDepth(1));
-                while ((geometryNodeIterator == null || !geometryNodeIterator.hasNext()) &&
-                        allIndexNodeIterator.hasNext()) {
-                    geometryNodeIterator = td.traverse(allIndexNodeIterator.next()).nodes().iterator();
-                }
-            }
-
-            public void remove() {
-            }
-        }
-
-        public IndexNodeToGeometryNodeIterable(Iterable<Node> allIndexNodes) {
-            this.allIndexNodeIterator = allIndexNodes.iterator();
-        }
-
-        public Iterator<Node> iterator() {
-            return new GeometryNodeIterator(database.beginTx());
         }
     }
 
