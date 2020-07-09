@@ -10,6 +10,8 @@ import org.locationtech.jts.io.WKTReader;
 import org.wowtools.neo4j.rtree.spatial.Envelope;
 import org.wowtools.neo4j.rtree.spatial.EnvelopeDecoder;
 
+import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
+
 /**
  * @author liuyu
  * @date 2020/5/27
@@ -20,7 +22,7 @@ public class TestSome {
     }
 
     private static void t1(){
-        System.out.println(RtreeQuery.bboxIntersect(
+        System.out.println(bboxIntersect(
                 new double[]{3, 1, 8, 9},
                 new double[]{
                         13,

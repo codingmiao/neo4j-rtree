@@ -66,13 +66,13 @@ public class RTreeIndex {
         }
     }
 
-    public static final String INDEX_PROP_BBOX = "bbox";
+    public static final String INDEX_PROP_BBOX = Constant.RtreeProperty.bbox;
 
     public static final String KEY_SPLIT = "splitMode";
     public static final String QUADRATIC_SPLIT = "quadratic";
     public static final String GREENES_SPLIT = "greene";
 
-    public static final String KEY_MAX_NODE_REFERENCES = "maxNodeReferences";
+    public static final String KEY_MAX_NODE_REFERENCES = Constant.RtreeProperty.maxNodeReferences;
     public static final String KEY_SHOULD_MERGE_TREES = "shouldMergeTrees";
     public static final long MIN_MAX_NODE_REFERENCES = 10;
     public static final long MAX_MAX_NODE_REFERENCES = 1000000;
