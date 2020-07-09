@@ -825,30 +825,27 @@ public class RTreeIndex {
     }
 
     private void visitInTx(SpatialIndexVisitor visitor, Long indexNodeId, Transaction tx) {
-        Node indexNode = tx.getNodeById(indexNodeId);
-        if (!visitor.needsToVisit(getIndexNodeEnvelope(indexNode, tx))) {
-            return;
-        }
-
-        if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
-            // Node is not a leaf
-
-            // collect children
-            List<Long> children = new ArrayList<>();
-            for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
-                children.add(rel.getEndNode().getId());
+        Deque<Long> stack = new ArrayDeque<>();//辅助遍历的栈
+        stack.push(indexNodeId);
+        while (!stack.isEmpty()) {
+            indexNodeId = stack.pop();
+            Node indexNode = tx.getNodeById(indexNodeId);
+            if (!visitor.needsToVisit(getIndexNodeEnvelope(indexNode, tx))) {
+                continue;
             }
 
-
-            // visit children
-            for (Long child : children) {
-                visitInTx(visitor, child, tx);
-            }
-        } else if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
-            for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
-                visitor.onIndexReference(rel.getEndNode());
+            if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
+                // Node is not a leaf
+                for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_CHILD)) {
+                    stack.push(rel.getEndNode().getId());
+                }
+            } else if (indexNode.hasRelationship(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
+                for (Relationship rel : indexNode.getRelationships(Direction.OUTGOING, RTreeRelationshipTypes.RTREE_REFERENCE)) {
+                    visitor.onIndexReference(rel.getEndNode());
+                }
             }
         }
+
     }
 
     private void initIndexMetadata() {
