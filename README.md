@@ -71,7 +71,7 @@ maven import in your project
 <dependency>
     <groupId>org.wowtools</groupId>
     <artifactId>neo4j-rtree</artifactId>
-    <version>1.2</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 Maven central repository build by jdk11，So if you use jdk8，you must build yourself:

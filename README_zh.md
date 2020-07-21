@@ -71,7 +71,7 @@ maven import in your project
 <dependency>
     <groupId>org.wowtools</groupId>
     <artifactId>neo4j-rtree</artifactId>
-    <version>1.2</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8，你需要自己编译一份适合于你的jdk的:
