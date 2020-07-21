@@ -1,7 +1,13 @@
 package org.wowtools.neo4j.rtree.util;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
+
 /**
  * bbox相交判断的工具类
+ *
  * @author liuyu
  * @date 2020/7/9
  */
@@ -37,6 +43,24 @@ public class BboxIntersectUtil {
     public static boolean pointInBbox(double[] bbox, double x, double y) {
         return bbox[0] <= x && x <= bbox[2]
                 && bbox[1] <= y && y <= bbox[3];
+    }
+
+    /**
+     * bbo转为geometry
+     * @param bbox bbox
+     * @param gf GeometryFactory 为了防止频繁创建而直接传入
+     * @return geometry
+     */
+    public static Geometry bbox2Geometry(double[] bbox, GeometryFactory gf) {
+        Coordinate[] shell = new Coordinate[5];
+        double xmin = bbox[0], ymin = bbox[1], xmax = bbox[2], ymax = bbox[3];
+        shell[0] = new Coordinate(xmin, ymin);
+        shell[1] = new Coordinate(xmax, ymin);
+        shell[2] = new Coordinate(xmax, ymax);
+        shell[3] = new Coordinate(xmin, ymax);
+        shell[4] = shell[0];
+        Polygon bboxGeo = gf.createPolygon(shell);
+        return bboxGeo;
     }
 
 }

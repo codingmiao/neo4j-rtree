@@ -33,6 +33,7 @@ import org.wowtools.neo4j.rtree.util.GeometryBbox;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bbox2Geometry;
 import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
 
 /**
@@ -164,6 +165,32 @@ public class RtreeQuery {
         queryBySpatialFilter(tx, rTreeIndex, filter, visitor);
     }
 
+
+    /**
+     * 查询与输入geometry相交的node，
+     * <p>
+     * 对于一些狭长的geometry，例如很长的一条线，bbox过滤几乎无效，此时用此方法效率更高
+     *
+     * @param tx         tx
+     * @param rTreeIndex 索引
+     * @param geometry   geometry
+     * @param visitor    结果访问器
+     */
+    public static void queryByStripGeometryIntersects(Transaction tx, RTreeIndex rTreeIndex, Geometry geometry, NodeVisitor visitor) {
+        final GeometryFactory gf = new GeometryFactory();
+        traverseRtree(tx, rTreeIndex,
+                (rtreeNode, nodeBbox) -> {
+                    Geometry nodeGeo = bbox2Geometry(nodeBbox, gf);
+                    return nodeGeo.intersects(geometry);
+                },
+                (objNode, objGeo) -> {
+                    if (geometry.intersects(objGeo)) {
+                        visitor.vist(objNode, geometry);
+                    }
+                }
+        );
+    }
+
     /**
      * 查询满足输入空间过滤器的node
      *
@@ -174,6 +201,33 @@ public class RtreeQuery {
      */
     public static void queryBySpatialFilter(Transaction tx, RTreeIndex rTreeIndex, SpatialFilter spatialFilter, NodeVisitor visitor) {
         double[] bbox = spatialFilter.getBbox();
+        traverseRtree(tx, rTreeIndex,
+                (rtreeNode, nodeBbox) -> bboxIntersect(bbox, nodeBbox),
+                (objNode, geometry) -> {
+                    if (spatialFilter.accept(geometry)) {
+                        visitor.vist(objNode, geometry);
+                    }
+                }
+        );
+
+    }
+
+    /**
+     * 树节点访问器
+     */
+    @FunctionalInterface
+    private interface RtreeNodeVisitor {
+        /**
+         * 访问树索引节点
+         *
+         * @param rtreeNode rtreeNode
+         * @param nodeBbox  nodeBbox
+         * @return 为false时跳过此节点的子节点
+         */
+        boolean vist(Node rtreeNode, double[] nodeBbox);
+    }
+
+    private static void traverseRtree(Transaction tx, RTreeIndex rTreeIndex, RtreeNodeVisitor rtreeNodeVisitor, NodeVisitor visitor) {
         WKBReader wkbReader = new WKBReader();
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
         Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
@@ -182,10 +236,10 @@ public class RtreeQuery {
             rtreeNode = stack.pop();
             //判断当前节点的bbox是否与输入bbox相交
             double[] nodeBbox = (double[]) rtreeNode.getProperty(Constant.RtreeProperty.bbox);
-
-            if (!bboxIntersect(bbox, nodeBbox)) {
+            if (!rtreeNodeVisitor.vist(rtreeNode, nodeBbox)) {
                 continue;
             }
+
             if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
                 //若有下级索引节点,下级索引节点入栈
                 for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
@@ -203,9 +257,7 @@ public class RtreeQuery {
                     } catch (ParseException e) {
                         throw new RuntimeException("parse wkb error", e);
                     }
-                    if (spatialFilter.accept(geometry)) {
-                        visitor.vist(objNode, geometry);
-                    }
+                    visitor.vist(objNode, geometry);
                 }
             }
 

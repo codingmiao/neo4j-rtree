@@ -35,6 +35,7 @@ try (Transaction tx = db.beginTx()) {
 
 ~~~java
 //Input an geometry, query the node covered by the geometry
+//对于狭长的geometry，使用queryByStripGeometryIntersects方法有更高的性能
 Geometry inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
 try (Transaction tx = db.beginTx()) {
     RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
