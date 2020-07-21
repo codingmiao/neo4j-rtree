@@ -2,8 +2,6 @@ package org.wowtools.neo4j.rtree;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerBootstrapper;
 import org.wowtools.common.utils.ResourcesReader;
 
 import java.io.File;
@@ -20,7 +18,7 @@ import java.util.Properties;
  * @date 2018/11/14
  */
 class Neo4jDbManager {
-    private static final ServerBootstrapper serverBootstrapper;
+    private static final CommunityBootstrapper serverBootstrapper;
     private static final String dbPath;
     private static final GraphDatabaseService graphDb;
 
@@ -49,9 +47,8 @@ class Neo4jDbManager {
         for (String cfgKey : cfgKeys) {//把所有配置都读到map里，解决默认端口无法修改的问题
             configOverrides.put(cfgKey, p.getProperty(cfgKey));
         }
-        serverBootstrapper.start(storeDir, cfgFile, configOverrides);
-        NeoServer neoServer = serverBootstrapper.getServer();
-        graphDb = neoServer.getDatabaseService().getDatabase();
+        serverBootstrapper.start(storeDir, configOverrides);
+        graphDb = serverBootstrapper.getDatabaseManagementService().database("neo4j");
     }
 
     private static void deleteFiles(File path) {
@@ -90,7 +87,7 @@ class Neo4jDbManager {
      *
      * @return
      */
-    public static ServerBootstrapper getServer() {
+    public static CommunityBootstrapper getServer() {
         return serverBootstrapper;
     }
 }

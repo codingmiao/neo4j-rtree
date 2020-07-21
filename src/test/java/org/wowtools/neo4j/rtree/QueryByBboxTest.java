@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKBWriter;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

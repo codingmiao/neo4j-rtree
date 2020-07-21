@@ -64,16 +64,35 @@ try (Transaction tx = db.beginTx()) {
 
 
 ## install
-
+The latest version is `1.2.2`
 
 maven import in your project
 ```
-<dependency>
-    <groupId>org.wowtools</groupId>
-    <artifactId>neo4j-rtree</artifactId>
-    <version>1.2.2</version>
-</dependency>
+            <dependency>
+                <groupId>org.wowtools</groupId>
+                <artifactId>neo4j-rtree</artifactId>
+                <version>${neo4j-rtree-version}</version>
+            </dependency>
 ```
+如果你的项目中已经使用了其它版本的neo4j(例如企业版)，引入时需要exclusions:
+```
+            <dependency>
+                <groupId>org.wowtools</groupId>
+                <artifactId>neo4j-rtree</artifactId>
+                <version>${neo4j-rtree-version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+```
+
 注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8，你需要自己编译一份适合于你的jdk的:
 
 clone & install

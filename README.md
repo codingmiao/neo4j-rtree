@@ -64,16 +64,35 @@ try (Transaction tx = db.beginTx()) {
 
 
 ## install
-
+The latest version is `1.2.2`
 
 maven import in your project
 ```
-<dependency>
-    <groupId>org.wowtools</groupId>
-    <artifactId>neo4j-rtree</artifactId>
-    <version>1.2.2</version>
-</dependency>
+            <dependency>
+                <groupId>org.wowtools</groupId>
+                <artifactId>neo4j-rtree</artifactId>
+                <version>${neo4j-rtree-version}</version>
+            </dependency>
 ```
+If you already use another version of Neo4j (for example, the Enterprise version) in your project, add exclusions tag:
+```
+            <dependency>
+                <groupId>org.wowtools</groupId>
+                <artifactId>neo4j-rtree</artifactId>
+                <version>${neo4j-rtree-version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+```
+
 Maven central repository build by jdk11，So if you use jdk8，you must build yourself:
 
 clone & install
