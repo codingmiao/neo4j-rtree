@@ -185,7 +185,7 @@ public class RtreeQuery {
                 },
                 (objNode, objGeo) -> {
                     if (geometry.intersects(objGeo)) {
-                        visitor.vist(objNode, geometry);
+                        visitor.vist(objNode, objGeo);
                     }
                 }
         );
