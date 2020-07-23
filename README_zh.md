@@ -64,7 +64,7 @@ try (Transaction tx = db.beginTx()) {
 
 
 ## install
-The latest version is `1.2.2`
+The latest version is `1.2.3`
 
 maven import in your project
 ```
