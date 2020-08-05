@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,26 +43,28 @@ public class RTreeIndexManager {
      * @param indexName         索引名(唯一)
      * @param geometryFieldName node中的geometry字段名
      * @param maxNodeReferences 每个树节点上最多挂几个节点
+     * @param geometryCacheSize geometry缓存数量，由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry
      * @return RTreeIndex
      */
-    public static synchronized RTreeIndex createIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences) {
+    public static synchronized RTreeIndex createIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences, int geometryCacheSize) {
         //判断索引名是否唯一
         try (Transaction tx = database.beginTx()) {
             tx.findNodes(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName).forEachRemaining((node) -> {
                 throw new RuntimeException("index name(" + indexName + ") has been taken");
             });
         }
-        return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, true);
+        return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, true);
     }
 
     /**
      * 获取索引
      *
-     * @param database  db
-     * @param indexName 索引名
+     * @param database          db
+     * @param indexName         索引名
+     * @param geometryCacheSize geometry缓存数量，由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry，可以和构造索引时不一致
      * @return RTreeIndex
      */
-    public static synchronized RTreeIndex getIndex(GraphDatabaseService database, String indexName) {
+    public static synchronized RTreeIndex getIndex(GraphDatabaseService database, String indexName, int geometryCacheSize) {
         try (Transaction tx = database.beginTx()) {
             Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName);
             if (null == rootNode) {
@@ -70,7 +72,7 @@ public class RTreeIndexManager {
             }
             String geometryFieldName = (String) rootNode.getProperty(Constant.RtreeProperty.geometryFieldName);
             int maxNodeReferences = (int) rootNode.getProperty(Constant.RtreeProperty.maxNodeReferences);
-            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, false);
+            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
         }
     }
 
@@ -81,9 +83,10 @@ public class RTreeIndexManager {
      * @param indexName         索引名(唯一)
      * @param geometryFieldName node中的geometry字段名，若已有索引，可能会和输入值不一致
      * @param maxNodeReferences 每个树节点上最多挂几个节点，若已有索引，可能会和输入值不一致
+     * @param geometryCacheSize geometry缓存数量，由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry，可以和构造索引时不一致
      * @return RTreeIndex
      */
-    public static synchronized RTreeIndex getOrCreateIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences) {
+    public static synchronized RTreeIndex getOrCreateIndex(GraphDatabaseService database, String indexName, String geometryFieldName, int maxNodeReferences, int geometryCacheSize) {
         Node rootNode;
         try (Transaction tx = database.beginTx()) {
             rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName);
@@ -93,9 +96,9 @@ public class RTreeIndexManager {
             }
         }
         if (null == rootNode) {
-            return createIndex(database, indexName, geometryFieldName, maxNodeReferences);
+            return createIndex(database, indexName, geometryFieldName, maxNodeReferences, geometryCacheSize);
         } else {
-            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, false);
+            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
         }
 
     }
@@ -103,7 +106,7 @@ public class RTreeIndexManager {
     /**
      * 删除索引
      *
-     * @param database db
+     * @param database  db
      * @param indexName index name
      */
     public static synchronized void dropIndex(GraphDatabaseService database, String indexName) {

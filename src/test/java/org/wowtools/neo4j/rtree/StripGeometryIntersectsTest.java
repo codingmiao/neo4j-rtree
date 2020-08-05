@@ -37,7 +37,7 @@ public class StripGeometryIntersectsTest {
     @Test
     public void test() {
         GraphDatabaseService db = Neo4jDbManager.getGraphDb();
-        RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "polygonIdx", geometryFileName, 64);
+        RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "polygonIdx", geometryFileName, 64,1024);
 
         Geometry inputGeo;
         try {

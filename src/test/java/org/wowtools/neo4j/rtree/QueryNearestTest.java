@@ -71,7 +71,7 @@ public class QueryNearestTest {
     public void queryNearest() {
         GraphDatabaseService db = Neo4jDbManager.getGraphDb();
         RTreeIndex index;
-        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64);
+        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64,1024);
         testPoint(db, index);
 //        Scanner sin = new Scanner(System.in);
 //        sin.next();

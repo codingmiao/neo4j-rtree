@@ -7,7 +7,8 @@
 
 新建空间索引
 ~~~java
-RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64);
+//5个参数依次是:  neo4j的GraphDatabaseService实例    索引名(唯一) 空间属性名   rtree最大子节点数 最大缓存geometry对象数
+RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64, 1024);
 ~~~
 
 
@@ -64,7 +65,7 @@ try (Transaction tx = db.beginTx()) {
 
 
 ## install
-The latest version is `1.2.3`
+The latest version is `1.3.0`
 
 maven import in your project
 ```

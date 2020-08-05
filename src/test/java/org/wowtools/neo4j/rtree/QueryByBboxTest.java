@@ -64,7 +64,7 @@ public class QueryByBboxTest {
 
         //查询测试
         try (Transaction tx = db.beginTx()) {
-            rTreeIndex = RTreeIndexManager.getIndex(db,"pointIdx");
+            rTreeIndex = RTreeIndexManager.getIndex(db,"pointIdx",1024);
             RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
                 intersectWkt.remove(node.getProperty(wktFileName));
             });
@@ -212,11 +212,11 @@ public class QueryByBboxTest {
         GraphDatabaseService db = Neo4jDbManager.getGraphDb();
         RTreeIndex index;
         //在[0,0,100,100]中随机生成点线并测试
-        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64);
+        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64,1024);
         testPoint(db, index);
-        index = RTreeIndexManager.createIndex(db, "lineIdx", geometryFileName, 64);
+        index = RTreeIndexManager.createIndex(db, "lineIdx", geometryFileName, 64,1024);
         testLine(db, index);
-        index = RTreeIndexManager.createIndex(db, "polygonIdx", geometryFileName, 64);
+        index = RTreeIndexManager.createIndex(db, "polygonIdx", geometryFileName, 64,1024);
         testPolygon(db, index);
 //        Scanner sin = new Scanner(System.in);
 //        sin.next();

@@ -10,6 +10,9 @@ import org.locationtech.jts.io.WKTReader;
 import org.wowtools.neo4j.rtree.spatial.Envelope;
 import org.wowtools.neo4j.rtree.spatial.EnvelopeDecoder;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
 
 /**
@@ -18,7 +21,11 @@ import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
  */
 public class TestSome {
     public static void main(String[] args) throws Exception{
-        t2();
+        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        readWriteLock.readLock().lock();
+        readWriteLock.writeLock().lock();
+        readWriteLock.writeLock().unlock();
+        readWriteLock.readLock().unlock();
     }
 
     private static void t1(){

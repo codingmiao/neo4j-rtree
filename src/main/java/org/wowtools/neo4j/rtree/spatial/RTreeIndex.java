@@ -19,10 +19,14 @@
  */
 package org.wowtools.neo4j.rtree.spatial;
 
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.Constant;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
@@ -35,9 +39,18 @@ public class RTreeIndex {
     private final String geometryFieldName;
     private final String indexName;
 
-    public RTreeIndex(String indexName, String geometryFieldName, GraphDatabaseService database, EnvelopeDecoder envelopeDecoder, int maxNodeReferences, boolean init) {
+    public static int concurrency = 32;
+
+    /**
+     * 由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry
+     */
+    private final Map<Long, Geometry> geometryCache;
+    private final ReentrantReadWriteLock geometryCacheLock = new ReentrantReadWriteLock();
+
+    public RTreeIndex(String indexName, String geometryFieldName, GraphDatabaseService database, EnvelopeDecoder envelopeDecoder, int maxNodeReferences, int geometryCacheSize, boolean init) {
         this.indexName = indexName;
         this.geometryFieldName = geometryFieldName;
+        geometryCache = org.wowtools.common.utils.LruCache.buildCache(geometryCacheSize, concurrency);
         if (init) {
             try (Transaction tx = database.beginTx()) {
                 Node rootNode = tx.createNode(Constant.RtreeLabel.ReferenceNode);
@@ -130,6 +143,40 @@ public class RTreeIndex {
 
         countSaved = false;
         totalGeometryCount++;
+    }
+
+
+    public Geometry getObjNodeGeometry(Node objNode, WKBReader wkbReader) {
+        Geometry geometry;
+        //先读缓存
+        if (geometryCacheLock.readLock().tryLock()) {//tryLock来保证在缓存命中率低时不至于被锁浪费时间,下同
+            geometry = geometryCache.get(objNode.getId());
+            geometryCacheLock.readLock().unlock();
+            if (null != geometry) {
+                return geometry;
+            }
+        } else {
+            return getObjNodeGeometryFromNode(objNode, wkbReader);
+        }
+
+        //缓存没有再读neo4j并写入缓存
+        geometry = getObjNodeGeometryFromNode(objNode, wkbReader);
+        if (geometryCacheLock.writeLock().tryLock()) {
+            geometryCache.put(objNode.getId(), geometry);
+            geometryCacheLock.writeLock().unlock();
+        }
+
+        return geometry;
+    }
+
+    private Geometry getObjNodeGeometryFromNode(Node objNode, WKBReader wkbReader) {
+        byte[] wkb = (byte[]) objNode.getProperty(geometryFieldName);
+        try {
+            Geometry geometry = wkbReader.read(wkb);
+            return geometry;
+        } catch (ParseException e) {
+            throw new RuntimeException("parse wkb error", e);
+        }
     }
 
     /**
@@ -494,6 +541,72 @@ public class RTreeIndex {
         partition(rootNode, geomNodes, 0, loadingFactor, tx);
     }
 
+
+    /**
+     * partition方法的输入，用以将递归改为循环
+     */
+    private static final class PartitionInput {
+        final Node indexNode;
+        final List<NodeWithEnvelope> nodes;
+        final int depth;
+        final double loadingFactor;
+
+        public PartitionInput(Node indexNode, List<NodeWithEnvelope> nodes, int depth, double loadingFactor) {
+            this.indexNode = indexNode;
+            this.nodes = nodes;
+            this.depth = depth;
+            this.loadingFactor = loadingFactor;
+        }
+    }
+
+    private void partitionWithoutRecursion(PartitionInput input, Transaction tx) {
+        Deque<PartitionInput> stack = new ArrayDeque<>();//辅助遍历的栈
+        stack.push(input);
+        while (!stack.isEmpty()) {
+            input = stack.pop();
+            // We want to split by the longest dimension to avoid degrading into extremely thin envelopes
+            int longestDimension = findLongestDimension(input.nodes);
+
+            // Sort the entries by the longest dimension and then create envelopes around left and right halves
+            input.nodes.sort(new SingleDimensionNodeEnvelopeComparator(longestDimension));
+
+            //work out the number of times to partition it:
+            final int targetLoading = (int) Math.round(maxNodeReferences * input.loadingFactor);
+            int nodeCount = input.nodes.size();
+
+            if (nodeCount <= targetLoading) {
+                // We have few enough nodes to add them directly to the current index node
+                boolean expandRootNodeBoundingBox = false;
+                for (NodeWithEnvelope n : input.nodes) {
+                    expandRootNodeBoundingBox |= insertInLeaf(input.indexNode, n.node, tx);
+                }
+                if (expandRootNodeBoundingBox) {
+                    adjustPathBoundingBox(input.indexNode, tx);
+                }
+            } else {
+                // We have more geometries than can fit in the current index node - create clusters and index them
+                final int height = expectedHeight(input.loadingFactor, nodeCount); //exploit change of base formula
+                final int subTreeSize = (int) Math.round(Math.pow(targetLoading, height - 1));
+                final int numberOfPartitions = (int) Math.ceil((double) nodeCount / (double) subTreeSize);
+                // - TODO change this to use the sort function above
+                List<List<NodeWithEnvelope>> partitions = partitionList(input.nodes, numberOfPartitions);
+
+                //recurse on each partition
+                for (List<NodeWithEnvelope> partition : partitions) {
+                    Node newIndexNode = tx.createNode();
+                    if (partition.size() > 1) {
+//                        partition(newIndexNode, partition, input.depth + 1, input.loadingFactor, tx);
+                        stack.push(new PartitionInput(newIndexNode, partition, input.depth + 1, input.loadingFactor));
+                    } else {
+                        addBelow(newIndexNode, partition.get(0).node, tx);
+                    }
+                    insertIndexNodeOnParent(input.indexNode, newIndexNode, tx);
+                }
+                monitor.addSplit(input.indexNode);
+            }
+        }
+    }
+
     /**
      * This will partition a collection of nodes under the specified index node. The nodes are clustered into one
      * or more groups based on the loading factor, and the tree is expanded if necessary. If the nodes all fit
@@ -501,7 +614,7 @@ public class RTreeIndex {
      * cluster at the deeper depth based on a new root node for each cluster.
      */
     private void partition(Node indexNode, List<NodeWithEnvelope> nodes, int depth, final double loadingFactor, Transaction tx) {
-
+//        partitionWithoutRecursion(new PartitionInput(indexNode,nodes,depth,loadingFactor),tx);
         // We want to split by the longest dimension to avoid degrading into extremely thin envelopes
         int longestDimension = findLongestDimension(nodes);
 
@@ -562,7 +675,6 @@ public class RTreeIndex {
 
 
     public synchronized void remove(long geomNodeId, boolean deleteGeomNode, boolean throwExceptionIfNotFound, Transaction tx) {
-
         Node geomNode = null;
         // getNodeById throws NotFoundException if node is already removed
         try {
@@ -609,6 +721,10 @@ public class RTreeIndex {
         } else if (throwExceptionIfNotFound) {
             throw new RuntimeException("GeometryNode not indexed with an RTree: " + geomNodeId);
         }
+        geometryCacheLock.writeLock().lock();
+        geometryCache.remove(geomNodeId);
+        geometryCacheLock.writeLock().unlock();
+
     }
 
     private Node deleteEmptyTreeNodes(Node indexNode, RelationshipType relType) {
@@ -672,6 +788,9 @@ public class RTreeIndex {
 
         countSaved = false;
         totalGeometryCount = 0;
+        geometryCacheLock.writeLock().lock();
+        geometryCache.clear();
+        geometryCacheLock.writeLock().unlock();
     }
 
     public synchronized void clear(final Listener monitor, Transaction tx) {
@@ -1227,13 +1346,18 @@ public class RTreeIndex {
     }
 
     private void adjustPathBoundingBox(Node node, Transaction tx) {
-        Node parent = getIndexNodeParent(node);
-        if (parent != null) {
-            if (adjustParentBoundingBox(parent, RTreeRelationshipTypes.RTREE_CHILD, tx)) {
-                // entry has been modified: adjust the path for the parent
-                adjustPathBoundingBox(parent, tx);
+        Deque<Node> stack = new ArrayDeque<>();
+        stack.push(node);
+        do {
+            node = stack.pop();
+            Node parent = getIndexNodeParent(node);
+            if (parent != null) {
+                if (adjustParentBoundingBox(parent, RTreeRelationshipTypes.RTREE_CHILD, tx)) {
+                    // entry has been modified: adjust the path for the parent
+                    stack.push(parent);
+                }
             }
-        }
+        } while (!stack.isEmpty());
     }
 
     /**

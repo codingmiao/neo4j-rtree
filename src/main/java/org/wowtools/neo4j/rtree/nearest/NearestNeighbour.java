@@ -9,13 +9,13 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.wowtools.neo4j.rtree.Constant;
 import org.wowtools.neo4j.rtree.RtreeNearestQuery;
+import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 
 import java.util.*;
 
@@ -27,16 +27,16 @@ public class NearestNeighbour {
     private final double x;
     private final double y;
     private final Point point;
-    private final String getGeometryFieldName;
+    private final RTreeIndex rTreeIndex;
     private final WKBReader wkbReader = new WKBReader();
 
-    public NearestNeighbour(RtreeNearestQuery.NodeFilter filter, int maxHits, Node root, double x, double y, String getGeometryFieldName) {
+    public NearestNeighbour(RtreeNearestQuery.NodeFilter filter, int maxHits, Node root, double x, double y, RTreeIndex rTreeIndex) {
         this.filter = filter;
         this.maxHits = maxHits;
         this.root = root;
         this.x = x;
         this.y = y;
-        this.getGeometryFieldName = getGeometryFieldName;
+        this.rTreeIndex = rTreeIndex;
         point = new GeometryFactory().createPoint(new Coordinate(x, y));
     }
 
@@ -64,6 +64,7 @@ public class NearestNeighbour {
 
     /**
      * 访问索引上的非叶子节点
+     *
      * @param node
      * @param drs
      * @param maxHits
@@ -88,6 +89,7 @@ public class NearestNeighbour {
 
     /**
      * 访问索引上的叶子节点
+     *
      * @param node
      * @param filter
      * @param drs
@@ -100,14 +102,8 @@ public class NearestNeighbour {
             int maxHits) {
         for (Relationship relationship : node.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
             Node objNode = relationship.getEndNode();
-            Geometry geometry;
-            byte[] wkb = (byte[]) objNode.getProperty(getGeometryFieldName);
-            try {
-                geometry = wkbReader.read(wkb);
-            } catch (ParseException e) {
-                throw new RuntimeException("parse wkb error", e);
-            }
-            if (filter.accept(objNode,geometry)) {
+            Geometry geometry = rTreeIndex.getObjNodeGeometry(objNode, wkbReader);
+            if (filter.accept(objNode, geometry)) {
                 double dist = geometry.distance(point);
                 int n = drs.size();
                 if (n < maxHits || dist < drs.get(n - 1).getDist()) {

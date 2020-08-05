@@ -250,13 +250,7 @@ public class RtreeQuery {
                 //若有下级对象节点，返回结果
                 for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
                     Node objNode = relationship.getEndNode();
-                    Geometry geometry;
-                    byte[] wkb = (byte[]) objNode.getProperty(rTreeIndex.getGeometryFieldName());
-                    try {
-                        geometry = wkbReader.read(wkb);
-                    } catch (ParseException e) {
-                        throw new RuntimeException("parse wkb error", e);
-                    }
+                    Geometry geometry = rTreeIndex.getObjNodeGeometry(objNode,wkbReader);
                     visitor.vist(objNode, geometry);
                 }
             }

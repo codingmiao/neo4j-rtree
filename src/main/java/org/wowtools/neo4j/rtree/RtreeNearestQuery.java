@@ -47,7 +47,7 @@ public class RtreeNearestQuery {
     public static List<DistanceResult> queryNearestN(Transaction tx, RTreeIndex rTreeIndex, double x, double y, int n, NodeFilter nodeFilter) {
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
         NearestNeighbour nn =
-                new NearestNeighbour(nodeFilter, n, rtreeNode, x, y, rTreeIndex.getGeometryFieldName());
+                new NearestNeighbour(nodeFilter, n, rtreeNode, x, y, rTreeIndex);
         return nn.find();
     }
 }
