@@ -212,9 +212,9 @@ public class QueryByBboxTest {
         GraphDatabaseService db = Neo4jDbManager.getGraphDb();
         RTreeIndex index;
         //在[0,0,100,100]中随机生成点线并测试
-        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64,1024);
+        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64,0);
         testPoint(db, index);
-        index = RTreeIndexManager.createIndex(db, "lineIdx", geometryFileName, 64,1024);
+        index = RTreeIndexManager.createIndex(db, "lineIdx", geometryFileName, 64,0);
         testLine(db, index);
         index = RTreeIndexManager.createIndex(db, "polygonIdx", geometryFileName, 64,1024);
         testPolygon(db, index);

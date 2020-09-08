@@ -32,7 +32,7 @@ public class CacheTest {
 
     @Test
     public void test() {
-        BuildCell cell1 = buildIndex(1);
+        BuildCell cell1 = buildIndex(0);
         BuildCell cell2 = buildIndex(geoNum);
         statistics(cell2);
         statistics(cell1);

@@ -23,6 +23,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.*;
+import org.wowtools.common.utils.LruCache;
 import org.wowtools.neo4j.rtree.Constant;
 
 import java.util.*;
@@ -36,21 +37,110 @@ import java.util.stream.Collectors;
  */
 public class RTreeIndex {
 
-    private final String geometryFieldName;
     private final String indexName;
 
     public static int concurrency = 32;
+    private final String geometryFieldName;
 
     /**
-     * 由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry
+     * 从node中读geometry的接口
      */
-    private final Map<Long, Geometry> geometryCache;
-    private final ReentrantReadWriteLock geometryCacheLock = new ReentrantReadWriteLock();
+    private static interface NodeGeometryReader {
+        Geometry read(Node objNode, WKBReader wkbReader);
+
+        void clear();
+
+        void remove(long nodeId);
+    }
+
+    private static final class NoCacheNodeGeometryReader implements NodeGeometryReader {
+        private final String geometryFieldName;
+
+        public NoCacheNodeGeometryReader(String geometryFieldName) {
+            this.geometryFieldName = geometryFieldName;
+        }
+
+        @Override
+        public Geometry read(Node objNode, WKBReader wkbReader) {
+            return getObjNodeGeometryFromNode(objNode, geometryFieldName, wkbReader);
+        }
+
+        @Override
+        public void clear() {
+
+        }
+
+        @Override
+        public void remove(long nodeId) {
+
+        }
+    }
+
+    private static final class CacheNodeGeometryReader implements NodeGeometryReader {
+        private final String geometryFieldName;
+        /**
+         * 由于对外wkb缓存转到堆内并转geometry比较耗时，故这里加了一个lru的缓存以直接获取geometry
+         */
+        private final Map<Long, Geometry> geometryCache;
+        private final ReentrantReadWriteLock geometryCacheLock = new ReentrantReadWriteLock();
+
+        public CacheNodeGeometryReader(Map<Long, Geometry> geometryCache, String geometryFieldName) {
+            this.geometryCache = geometryCache;
+            this.geometryFieldName = geometryFieldName;
+
+        }
+
+        @Override
+        public Geometry read(Node objNode, WKBReader wkbReader) {
+            Geometry geometry;
+            //先读缓存
+            if (geometryCacheLock.readLock().tryLock()) {//tryLock来保证在缓存命中率低时不至于被锁浪费时间,下同
+                geometry = geometryCache.get(objNode.getId());
+                geometryCacheLock.readLock().unlock();
+                if (null != geometry) {
+                    return geometry;
+                }
+            } else {
+                return getObjNodeGeometryFromNode(objNode, geometryFieldName, wkbReader);
+            }
+
+            //缓存没有再读neo4j并写入缓存
+            geometry = getObjNodeGeometryFromNode(objNode, geometryFieldName, wkbReader);
+            if (geometryCacheLock.writeLock().tryLock()) {
+                geometryCache.put(objNode.getId(), geometry);
+                geometryCacheLock.writeLock().unlock();
+            }
+
+            return geometry;
+        }
+
+        @Override
+        public void clear() {
+            geometryCacheLock.writeLock().lock();
+            geometryCache.clear();
+            geometryCacheLock.writeLock().unlock();
+        }
+
+        @Override
+        public void remove(long nodeId) {
+            geometryCacheLock.writeLock().lock();
+            geometryCache.remove(nodeId);
+            geometryCacheLock.writeLock().unlock();
+        }
+    }
+
+
+    private final NodeGeometryReader nodeGeometryReader;
 
     public RTreeIndex(String indexName, String geometryFieldName, GraphDatabaseService database, EnvelopeDecoder envelopeDecoder, int maxNodeReferences, int geometryCacheSize, boolean init) {
         this.indexName = indexName;
         this.geometryFieldName = geometryFieldName;
-        geometryCache = org.wowtools.common.utils.LruCache.buildCache(geometryCacheSize, concurrency);
+        if (geometryCacheSize > 0) {
+            Map<Long, Geometry> geometryCache = LruCache.buildCache(geometryCacheSize, concurrency);
+            nodeGeometryReader = new CacheNodeGeometryReader(geometryCache, geometryFieldName);
+        } else {
+            nodeGeometryReader = new NoCacheNodeGeometryReader(geometryFieldName);
+        }
         if (init) {
             try (Transaction tx = database.beginTx()) {
                 Node rootNode = tx.createNode(Constant.RtreeLabel.ReferenceNode);
@@ -147,29 +237,10 @@ public class RTreeIndex {
 
 
     public Geometry getObjNodeGeometry(Node objNode, WKBReader wkbReader) {
-        Geometry geometry;
-        //先读缓存
-        if (geometryCacheLock.readLock().tryLock()) {//tryLock来保证在缓存命中率低时不至于被锁浪费时间,下同
-            geometry = geometryCache.get(objNode.getId());
-            geometryCacheLock.readLock().unlock();
-            if (null != geometry) {
-                return geometry;
-            }
-        } else {
-            return getObjNodeGeometryFromNode(objNode, wkbReader);
-        }
-
-        //缓存没有再读neo4j并写入缓存
-        geometry = getObjNodeGeometryFromNode(objNode, wkbReader);
-        if (geometryCacheLock.writeLock().tryLock()) {
-            geometryCache.put(objNode.getId(), geometry);
-            geometryCacheLock.writeLock().unlock();
-        }
-
-        return geometry;
+        return nodeGeometryReader.read(objNode, wkbReader);
     }
 
-    private Geometry getObjNodeGeometryFromNode(Node objNode, WKBReader wkbReader) {
+    private static Geometry getObjNodeGeometryFromNode(Node objNode, String geometryFieldName, WKBReader wkbReader) {
         byte[] wkb = (byte[]) objNode.getProperty(geometryFieldName);
         try {
             Geometry geometry = wkbReader.read(wkb);
@@ -721,10 +792,7 @@ public class RTreeIndex {
         } else if (throwExceptionIfNotFound) {
             throw new RuntimeException("GeometryNode not indexed with an RTree: " + geomNodeId);
         }
-        geometryCacheLock.writeLock().lock();
-        geometryCache.remove(geomNodeId);
-        geometryCacheLock.writeLock().unlock();
-
+        nodeGeometryReader.remove(geomNodeId);
     }
 
     private Node deleteEmptyTreeNodes(Node indexNode, RelationshipType relType) {
@@ -788,9 +856,7 @@ public class RTreeIndex {
 
         countSaved = false;
         totalGeometryCount = 0;
-        geometryCacheLock.writeLock().lock();
-        geometryCache.clear();
-        geometryCacheLock.writeLock().unlock();
+        nodeGeometryReader.clear();
     }
 
     public synchronized void clear(final Listener monitor, Transaction tx) {
