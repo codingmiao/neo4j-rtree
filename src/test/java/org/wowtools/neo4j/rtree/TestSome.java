@@ -40,59 +40,6 @@ public class TestSome {
     }
 
 
-    private static void t2() throws Exception{
-        class MyEnvelopeDecoder implements EnvelopeDecoder {
-            @Override
-            public Envelope decodeEnvelope(Object o) {
-                byte[] wkb = (byte[]) o;
-                Geometry geometry;
-                try {
-                    geometry = new WKBReader().read(wkb);
-                } catch (ParseException e) {
-                    throw new RuntimeException("pase wkb error ", e);
-                }
-                Geometry bound = geometry.getBoundary();
-                Coordinate[] coords = bound.getCoordinates();
-                double xmin, xmax, ymin, ymax;
-                if (coords.length > 1) {
-                    xmin = Double.MAX_VALUE;
-                    ymin = Double.MAX_VALUE;
-                    xmax = Double.MIN_VALUE;
-                    ymax = Double.MIN_VALUE;
-                    for (Coordinate coordinate : coords) {
-                        double x = coordinate.x;
-                        double y = coordinate.y;
-                        if (x < xmin) {
-                            xmin = x;
-                        }
-                        if (y < ymin) {
-                            ymin = y;
-                        }
-                        if (x > xmax) {
-                            xmax = x;
-                        }
-                        if (y > ymax) {
-                            ymax = y;
-                        }
-                    }
-                } else {
-                    Coordinate coord = geometry.getCoordinate();
-                    xmin = coord.x;
-                    ymin = coord.y;
-                    xmax = coord.x;
-                    ymax = coord.y;
-                }
-
-                Envelope envelope = new Envelope(xmin, xmax, ymin, ymax);
-                return envelope;
-            }
-        }
-        MyEnvelopeDecoder myEnvelopeDecoder = new MyEnvelopeDecoder();
-        Geometry line = new WKTReader().read("LINESTRING (93.27624401382229 51.39388590149433, 6.576662043340875 7.392660808666973, 19.293425313955648 36.84401696147332)");
-        byte[] wkb = new WKBWriter().write(line);
-        Envelope env = myEnvelopeDecoder.decodeEnvelope(wkb);
-        System.out.println(env);
-    }
 
 
 }

@@ -369,7 +369,7 @@ public class RTreeIndex {
 
     public class GeometryNodeWithEnvelope extends NodeWithEnvelope {
         GeometryNodeWithEnvelope(Node node) {
-            super(node, envelopeDecoder.decodeEnvelope(node.getProperty(geometryFieldName)));
+            super(node, envelopeDecoder.decodeEnvelope(node));
         }
     }
 
@@ -983,7 +983,7 @@ public class RTreeIndex {
      */
     public Envelope getLeafNodeEnvelope(Node geomNode) {
 //        throw new UnsupportedOperationException();
-        return envelopeDecoder.decodeEnvelope(geomNode.getProperty(geometryFieldName));
+        return envelopeDecoder.decodeEnvelope(geomNode);
     }
 
     /**

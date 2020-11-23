@@ -53,7 +53,7 @@ public class RTreeIndexManager {
                 throw new RuntimeException("index name(" + indexName + ") has been taken");
             });
         }
-        return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, true);
+        return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(geometryFieldName), maxNodeReferences, geometryCacheSize, true);
     }
 
     /**
@@ -72,7 +72,7 @@ public class RTreeIndexManager {
             }
             String geometryFieldName = (String) rootNode.getProperty(Constant.RtreeProperty.geometryFieldName);
             int maxNodeReferences = (int) rootNode.getProperty(Constant.RtreeProperty.maxNodeReferences);
-            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
+            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(geometryFieldName), maxNodeReferences, geometryCacheSize, false);
         }
     }
 
@@ -98,7 +98,7 @@ public class RTreeIndexManager {
         if (null == rootNode) {
             return createIndex(database, indexName, geometryFieldName, maxNodeReferences, geometryCacheSize);
         } else {
-            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
+            return new RTreeIndex(indexName, geometryFieldName, database, new MyEnvelopeDecoder(geometryFieldName), maxNodeReferences, geometryCacheSize, false);
         }
 
     }
@@ -143,9 +143,15 @@ public class RTreeIndexManager {
 
 
     private static final class MyEnvelopeDecoder implements EnvelopeDecoder {
+        private final String geometryFieldName;
+
+        public MyEnvelopeDecoder(String geometryFieldName) {
+            this.geometryFieldName = geometryFieldName;
+        }
+
         @Override
-        public Envelope decodeEnvelope(Object o) {
-            byte[] wkb = (byte[]) o;
+        public Envelope decodeEnvelope(Node node) {
+            byte[] wkb = (byte[]) node.getProperty(geometryFieldName);
             Geometry geometry;
             try {
                 geometry = new WKBReader().read(wkb);

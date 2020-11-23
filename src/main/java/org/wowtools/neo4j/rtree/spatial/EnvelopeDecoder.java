@@ -20,8 +20,13 @@
 package org.wowtools.neo4j.rtree.spatial;
 
 
-public interface EnvelopeDecoder {
+import org.neo4j.graphdb.Node;
 
-    Envelope decodeEnvelope(Object geoObj);
+/**
+ * rtree节点范围解析器
+ */
+@FunctionalInterface
+public interface EnvelopeDecoder {
+    Envelope decodeEnvelope(Node node);
 
 }
