@@ -1,5 +1,6 @@
 package org.wowtools.neo4j.rtree;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKBWriter;
@@ -48,19 +49,37 @@ public class QueryNearestTest {
             tx.commit();
         }
 
-        //查询测试
+        //查询测试,全范围
         try (Transaction tx = db.beginTx()) {
-            List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> true);
-            System.out.println(res);
-        } catch (Exception e) {
-            e.printStackTrace();
+            List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 4, (node, geometry) -> true);
+            Assert.assertEquals(4, res.size());
+            Assert.assertArrayEquals(new Object[]{
+                    "10,13",
+                    "10,14",
+                    "11,13",
+                    "11,14"
+            }, new Object[]{
+                    res.get(0).getNode().getProperty("idx"),
+                    res.get(1).getNode().getProperty("idx"),
+                    res.get(2).getNode().getProperty("idx"),
+                    res.get(3).getNode().getProperty("idx")
+            });
         }
-
+        //查询测试,条件过滤
         try (Transaction tx = db.beginTx()) {
-            List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> geometry.getCoordinate().x<10);
-            System.out.println(res);
-        } catch (Exception e) {
-            e.printStackTrace();
+            List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 4, (node, geometry) -> geometry.getCoordinate().x < 10);
+            Assert.assertEquals(4, res.size());
+            Assert.assertArrayEquals(new Object[]{
+                    "9,13",
+                    "9,14",
+                    "9,12",
+                    "9,15"
+            }, new Object[]{
+                    res.get(0).getNode().getProperty("idx"),
+                    res.get(1).getNode().getProperty("idx"),
+                    res.get(2).getNode().getProperty("idx"),
+                    res.get(3).getNode().getProperty("idx")
+            });
         }
         System.out.println("查询完成");
 
@@ -71,7 +90,7 @@ public class QueryNearestTest {
     public void queryNearest() {
         GraphDatabaseService db = Neo4jDbManager.getGraphDb();
         RTreeIndex index;
-        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64,1024);
+        index = RTreeIndexManager.createIndex(db, "pointIdx", geometryFileName, 64, 1024);
         testPoint(db, index);
 //        Scanner sin = new Scanner(System.in);
 //        sin.next();
