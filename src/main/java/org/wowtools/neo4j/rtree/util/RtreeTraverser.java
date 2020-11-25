@@ -1,7 +1,5 @@
 package org.wowtools.neo4j.rtree.util;
 
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -21,7 +19,7 @@ public class RtreeTraverser {
 
 
     /**
-     * 索引点访问器
+     * 索引点访问器，决定哪些索引节点符合条件
      */
     @FunctionalInterface
     public interface IndexNodeVisitor {
@@ -46,7 +44,14 @@ public class RtreeTraverser {
         void vist(Node objNode);
     }
 
-    public static void traverse(Transaction tx, RTreeIndex rTreeIndex, IndexNodeVisitor rtreeNodeVisitor,ObjNodeVisitor visitor) {
+    /**
+     * 遍历rtree
+     * @param tx tx
+     * @param rTreeIndex index
+     * @param rtreeNodeVisitor 索引节点访问器，决定哪些节点符合条件
+     * @param objNodeVisitor 结果节点访问器
+     */
+    public static void traverse(Transaction tx, RTreeIndex rTreeIndex, IndexNodeVisitor rtreeNodeVisitor,ObjNodeVisitor objNodeVisitor) {
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
         Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
         stack.push(rtreeNode);
@@ -68,7 +73,7 @@ public class RtreeTraverser {
                 //若有下级对象节点，返回结果
                 for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
                     Node objNode = relationship.getEndNode();
-                    visitor.vist(objNode);
+                    objNodeVisitor.vist(objNode);
                 }
             }
 

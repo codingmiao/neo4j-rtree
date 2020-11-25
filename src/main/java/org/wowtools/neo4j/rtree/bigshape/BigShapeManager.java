@@ -1,11 +1,15 @@
 package org.wowtools.neo4j.rtree.bigshape;
 
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 import org.locationtech.jts.io.WKBWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.Constant;
+import org.wowtools.neo4j.rtree.RTreeIndexManager;
+import org.wowtools.neo4j.rtree.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.bigshape.pojo.Grid;
 import org.wowtools.neo4j.rtree.bigshape.util.GridCuter;
 import org.wowtools.neo4j.rtree.spatial.Envelope;
@@ -24,15 +28,39 @@ import java.util.Map;
  */
 public class BigShapeManager {
 
-    private static final String geometryFieldName = "a";
-    private static final String isCoverCompletelyFieldName = "b";
+    public static final String keyFieldName = "g";
     private static final String indexNamePrefix = "BigShapeSidx_";
 
     private static final Object createRTreeIndexLock = new Object();
 
+    public static BigShape get(GraphDatabaseService database, String id) {
+        String indexName = indexNamePrefix + id;
+        int maxNodeReferences;
+        int geometryCacheSize = 256;//TODO 改为传入或动态获取
+        try (Transaction tx = database.beginTx()) {
+            Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName);
+            if (null == rootNode) {
+                throw new RuntimeException("index (" + indexName + ") is nonexistent");
+            }
+            maxNodeReferences = (int) rootNode.getProperty(Constant.RtreeProperty.maxNodeReferences);
+        }
+        RTreeIndex rTreeIndex = new RTreeIndex(indexName, keyFieldName, database, new BigShapeReadEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
+        BigShape bigShape = new BigShape(rTreeIndex);
+        return bigShape;
+    }
+
+    /**
+     * 构造BigShape并存入图库
+     *
+     * @param database
+     * @param id       BigShape id，请确保其唯一性
+     * @param geometry geometry
+     * @param row      切成几行
+     * @param column   切成几列
+     */
     public static void build(GraphDatabaseService database, String id, Geometry geometry, int row, int column) {
         String indexName = indexNamePrefix + id;
-        Map<Long, Geometry> geometryMap = new HashMap<>();
+        Map<Long, Envelope> envelopeMap = new HashMap<>();//缓存一个bbox，防止多次读取
         RTreeIndex rTreeIndex;
         synchronized (createRTreeIndexLock) {
             try (Transaction tx = database.beginTx()) {
@@ -40,8 +68,8 @@ public class BigShapeManager {
                     throw new RuntimeException("index name(" + indexName + ") has been taken");
                 });
             }
-            rTreeIndex = new RTreeIndex(indexName, geometryFieldName, database,
-                    new BigShapeWriteEnvelopeDecoder(geometryMap), 64, 0, true);
+            rTreeIndex = new RTreeIndex(indexName, keyFieldName, database,
+                    new BigShapeWriteEnvelopeDecoder(envelopeMap), 2, 0, true);
         }
 
         List<Grid> grids = GridCuter.cut(geometry, row, column);
@@ -50,32 +78,57 @@ public class BigShapeManager {
         try (Transaction tx = database.beginTx()) {
             List<Node> geomNodes = new LinkedList<>();
             for (Grid grid : grids) {
-                byte[] wkb = wkbWriter.write(grid.getGeometry());
+                Object value;//存到图库中的值
+                GeometryBbox.Bbox bbox = GeometryBbox.getBbox(grid.getGeometry());
+                if (grid.isCoverCompletely()) {//若完全覆盖网格，则存储bbox
+                    value = bbox.toDoubleArray();
+                } else {//若未完全覆盖网格，则存储相交部分的geometry wkb
+                    value = wkbWriter.write(grid.getGeometry());
+                }
                 Node gridNode = tx.createNode();
-                gridNode.setProperty(geometryFieldName, wkb);
-                gridNode.setProperty(isCoverCompletelyFieldName, grid.isCoverCompletely());
-                geometryMap.put(gridNode.getId(), grid.getGeometry());
+                gridNode.setProperty(keyFieldName, value);
+                envelopeMap.put(gridNode.getId(), bbox.toEnvelope());
                 geomNodes.add(gridNode);
             }
             rTreeIndex.add(geomNodes, tx);
             tx.commit();
         }
+
     }
 
     private static final class BigShapeWriteEnvelopeDecoder implements EnvelopeDecoder {
-        private final Map<Long, Geometry> geometryMap;
+        private final Map<Long, Envelope> envelopeMap;
 
-        public BigShapeWriteEnvelopeDecoder(Map<Long, Geometry> geometryMap) {
-            this.geometryMap = geometryMap;
+        public BigShapeWriteEnvelopeDecoder(Map<Long, Envelope> envelopeMap) {
+            this.envelopeMap = envelopeMap;
         }
 
         @Override
         public Envelope decodeEnvelope(Node node) {
-            Geometry geometry = geometryMap.get(node.getId());
-            GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
+            return envelopeMap.get(node.getId());
+        }
+    }
 
-            Envelope envelope = new Envelope(bbox.xmin, bbox.xmax, bbox.ymin, bbox.ymax);
-            return envelope;
+    private static final class BigShapeReadEnvelopeDecoder implements EnvelopeDecoder {
+        private final WKBReader wkbReader = new WKBReader();
+
+        @Override
+        public Envelope decodeEnvelope(Node node) {
+            Object value = node.getProperty(keyFieldName);
+            if (value instanceof double[]) {
+                double[] bbox = (double[]) value;
+                return new Envelope(bbox[0], bbox[2], bbox[1], bbox[3]);
+            } else {
+                byte[] wkb = (byte[]) value;
+                Geometry geometry;
+                try {
+                    geometry = wkbReader.read(wkb);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
+                return bbox.toEnvelope();
+            }
         }
     }
 }

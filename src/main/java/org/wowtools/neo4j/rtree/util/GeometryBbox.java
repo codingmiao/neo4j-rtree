@@ -2,6 +2,7 @@ package org.wowtools.neo4j.rtree.util;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.wowtools.neo4j.rtree.spatial.Envelope;
 
 /**
  * 获取geometry的bbox
@@ -23,6 +24,15 @@ public class GeometryBbox {
             this.ymin = ymin;
             this.ymax = ymax;
         }
+
+        public double[] toDoubleArray() {
+            return new double[]{xmin, ymin, xmax, ymax};
+        }
+
+        public Envelope toEnvelope() {
+            return new Envelope(xmin, xmax, ymin, ymax);
+        }
+
     }
 
     /**
