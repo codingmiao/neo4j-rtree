@@ -17,7 +17,7 @@ import java.util.Properties;
  * @author liuyu
  * @date 2018/11/14
  */
-class Neo4jDbManager {
+public class Neo4jDbManager {
     private static final CommunityBootstrapper serverBootstrapper;
     private static final String dbPath;
     private static final GraphDatabaseService graphDb;

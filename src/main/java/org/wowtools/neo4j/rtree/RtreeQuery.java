@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
+import org.locationtech.jts.io.WKBWriter;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -29,6 +30,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.RtreeTraverser;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -54,6 +56,32 @@ public class RtreeQuery {
          * @param geometry 访问到node的geometry，由node的空间字段wkb转换而来，因为空间过滤时必须要转换一次，所以直接回传避免重复转换
          */
         void vist(Node node, Geometry geometry);
+    }
+
+    /**
+     * 查询结果访问器适配
+     */
+    private static final class MyObjNodeVisitor implements RtreeTraverser.ObjNodeVisitor {
+
+        private final WKBReader wkbReader = new WKBReader();
+        private final RTreeIndex rTreeIndex;
+        private final SpatialFilter spatialFilter;
+        private final NodeVisitor nodeVisitor;
+
+        public MyObjNodeVisitor(RTreeIndex rTreeIndex, SpatialFilter spatialFilter, NodeVisitor nodeVisitor) {
+            this.rTreeIndex = rTreeIndex;
+            this.spatialFilter = spatialFilter;
+            this.nodeVisitor = nodeVisitor;
+        }
+
+        @Override
+        public void vist(Node objNode) {
+            Geometry geometry = rTreeIndex.getObjNodeGeometry(objNode, wkbReader);
+            if (spatialFilter.accept(geometry)) {
+                nodeVisitor.vist(objNode, geometry);
+            }
+        }
+
     }
 
     /**
@@ -178,16 +206,13 @@ public class RtreeQuery {
      */
     public static void queryByStripGeometryIntersects(Transaction tx, RTreeIndex rTreeIndex, Geometry geometry, NodeVisitor visitor) {
         final GeometryFactory gf = new GeometryFactory();
-        traverseRtree(tx, rTreeIndex,
+        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex,new GeometryIntersectsSpatialFilter(geometry),visitor);
+        RtreeTraverser.traverse(tx,rTreeIndex,
                 (rtreeNode, nodeBbox) -> {
                     Geometry nodeGeo = bbox2Geometry(nodeBbox, gf);
                     return nodeGeo.intersects(geometry);
                 },
-                (objNode, objGeo) -> {
-                    if (geometry.intersects(objGeo)) {
-                        visitor.vist(objNode, objGeo);
-                    }
-                }
+                myObjNodeVisitor
         );
     }
 
@@ -201,61 +226,11 @@ public class RtreeQuery {
      */
     public static void queryBySpatialFilter(Transaction tx, RTreeIndex rTreeIndex, SpatialFilter spatialFilter, NodeVisitor visitor) {
         double[] bbox = spatialFilter.getBbox();
-        traverseRtree(tx, rTreeIndex,
+        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex,spatialFilter,visitor);
+        RtreeTraverser.traverse(tx,rTreeIndex,
                 (rtreeNode, nodeBbox) -> bboxIntersect(bbox, nodeBbox),
-                (objNode, geometry) -> {
-                    if (spatialFilter.accept(geometry)) {
-                        visitor.vist(objNode, geometry);
-                    }
-                }
+                myObjNodeVisitor
         );
-
-    }
-
-    /**
-     * 树节点访问器
-     */
-    @FunctionalInterface
-    private interface RtreeNodeVisitor {
-        /**
-         * 访问树索引节点
-         *
-         * @param rtreeNode rtreeNode
-         * @param nodeBbox  nodeBbox
-         * @return 为false时跳过此节点的子节点
-         */
-        boolean vist(Node rtreeNode, double[] nodeBbox);
-    }
-
-    private static void traverseRtree(Transaction tx, RTreeIndex rTreeIndex, RtreeNodeVisitor rtreeNodeVisitor, NodeVisitor visitor) {
-        WKBReader wkbReader = new WKBReader();
-        Node rtreeNode = rTreeIndex.getIndexRoot(tx);
-        Deque<Node> stack = new ArrayDeque<>();//辅助遍历的栈
-        stack.push(rtreeNode);
-        while (!stack.isEmpty()) {
-            rtreeNode = stack.pop();
-            //判断当前节点的bbox是否与输入bbox相交
-            double[] nodeBbox = (double[]) rtreeNode.getProperty(Constant.RtreeProperty.bbox);
-            if (!rtreeNodeVisitor.vist(rtreeNode, nodeBbox)) {
-                continue;
-            }
-
-            if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
-                //若有下级索引节点,下级索引节点入栈
-                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_CHILD)) {
-                    Node child = relationship.getEndNode();
-                    stack.push(child);
-                }
-            } else if (rtreeNode.hasRelationship(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
-                //若有下级对象节点，返回结果
-                for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
-                    Node objNode = relationship.getEndNode();
-                    Geometry geometry = rTreeIndex.getObjNodeGeometry(objNode,wkbReader);
-                    visitor.vist(objNode, geometry);
-                }
-            }
-
-        }
     }
 
 
