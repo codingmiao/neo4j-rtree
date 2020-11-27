@@ -76,7 +76,7 @@ The actual measurement performance of BigShape is up to 100 times faster than th
 
 
 ## install
-The latest version is `1.4.0`
+The latest version is `1.4.2`
 
 maven import in your project
 ```

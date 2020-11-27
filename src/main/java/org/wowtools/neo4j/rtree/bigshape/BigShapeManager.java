@@ -51,7 +51,7 @@ public class BigShapeManager {
     public static BigShape get(GraphDatabaseService database, String id) {
         String indexName = indexNamePrefix + id;
         int maxNodeReferences;
-        int geometryCacheSize = 256;//TODO 改为传入或动态获取
+        int nodeValueCacheSize = 256;//TODO 改为动态获取或传入
         try (Transaction tx = database.beginTx()) {
             Node rootNode = tx.findNode(Constant.RtreeLabel.ReferenceNode, Constant.RtreeProperty.indexName, indexName);
             if (null == rootNode) {
@@ -59,8 +59,8 @@ public class BigShapeManager {
             }
             maxNodeReferences = (int) rootNode.getProperty(Constant.RtreeProperty.maxNodeReferences);
         }
-        RTreeIndex rTreeIndex = new RTreeIndex(indexName, keyFieldName, database, new BigShapeReadEnvelopeDecoder(), maxNodeReferences, geometryCacheSize, false);
-        BigShape bigShape = new BigShape(rTreeIndex);
+        RTreeIndex rTreeIndex = new RTreeIndex(indexName, keyFieldName, database, new BigShapeReadEnvelopeDecoder(), maxNodeReferences, 0, false);
+        BigShape bigShape = new BigShape(rTreeIndex, nodeValueCacheSize);
         return bigShape;
     }
 

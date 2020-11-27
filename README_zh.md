@@ -76,7 +76,7 @@ System.out.println(bigShape.intersects(tx, s1));//利用BigShape来做空间关�
 
 
 ## install
-The latest version is `1.4.0`
+The latest version is `1.4.2`
 
 maven import in your project
 ```
