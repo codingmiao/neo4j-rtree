@@ -4,19 +4,21 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.wowtools.common.utils.LruCache;
 import org.wowtools.neo4j.rtree.Constant;
 import org.wowtools.neo4j.rtree.bigshape.BigShapeManager;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.util.BboxIntersectUtil;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.WkbReaderManager;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 
 import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
 
@@ -28,9 +30,11 @@ import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
  */
 public class BigShape {
     private final RTreeIndex rTreeIndex;
+    private final int nodeValueCacheSize;
 
-    public BigShape(RTreeIndex rTreeIndex) {
+    public BigShape(RTreeIndex rTreeIndex, int nodeValueCacheSize) {
         this.rTreeIndex = rTreeIndex;
+        this.nodeValueCacheSize = nodeValueCacheSize;
     }
 
 //    /**
@@ -54,9 +58,9 @@ public class BigShape {
     public boolean intersects(Transaction tx, Geometry g) {
         final IntersectsJudge intersectsJudge;
         if (g instanceof Point) {
-            intersectsJudge = new PointIntersectsJudge(g);
+            intersectsJudge = new PointIntersectsJudge(g, nodeValueCacheSize);
         } else {
-            intersectsJudge = new OtherIntersectsJudge(g);
+            intersectsJudge = new OtherIntersectsJudge(g, nodeValueCacheSize);
         }
         //FIXME 这里由于找到一个相交对象即可return，所以未复用RtreeTraverser的方法，后续有相同场景的话抽取公共代码
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);
@@ -80,8 +84,7 @@ public class BigShape {
                 //若有下级对象节点，返回结果
                 for (Relationship relationship : rtreeNode.getRelationships(Direction.OUTGOING, Constant.Relationship.RTREE_REFERENCE)) {
                     Node objNode = relationship.getEndNode();
-                    Object value = objNode.getProperty(BigShapeManager.keyFieldName);
-                    if (intersectsJudge.judge(value)) {
+                    if (intersectsJudge.judge(objNode)) {
                         return true;//有一个相交即可直接返回
                     }
                 }
@@ -96,31 +99,42 @@ public class BigShape {
     private static abstract class IntersectsJudge {
 
         protected final Geometry geometry;
-        protected final WKBReader wkbReader = new WKBReader();
         protected final double[] geoBbox;
+        protected final Map<Long, Object> cache;
 
-        public IntersectsJudge(Geometry geometry) {
+        public IntersectsJudge(Geometry geometry, int cacheSize) {
             this.geometry = geometry;
             geoBbox = GeometryBbox.getBbox(geometry).toDoubleArray();
+            cache = LruCache.buildCache(cacheSize, 32);
         }
 
-        public boolean judge(Object value) {
+        public boolean judge(Node node) {
+            Object value = cache.get(node.getId());
+            if (null == value) {
+                value = node.getProperty(BigShapeManager.keyFieldName);
+                if (value instanceof byte[]) {
+                    try {
+                        value = WkbReaderManager.get().read((byte[]) value);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                cache.put(node.getId(), value);
+            }
+            return judgeValue(value);
+        }
+
+        protected boolean judgeValue(Object value) {
             if (value instanceof double[]) {//bbox
                 return judgeBbox((double[]) value);
             } else {//wkb
-                return judgeWkb((byte[]) value);
+                return judgeGeometry((Geometry) value);
             }
         }
 
         abstract boolean judgeBbox(double[] bbox);
 
-        boolean judgeWkb(byte[] wkb) {
-            Geometry geometry;
-            try {
-                geometry = wkbReader.read(wkb);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
+        protected boolean judgeGeometry(Geometry geometry) {
 //            double[] gb = GeometryBbox.getBbox(geometry).toDoubleArray();
 //            if(!BboxIntersectUtil.bboxIntersect(gb,geoBbox)){
 //                return false;
@@ -137,8 +151,8 @@ public class BigShape {
         private final double x;
         private final double y;
 
-        public PointIntersectsJudge(Geometry geometry) {
-            super(geometry);
+        public PointIntersectsJudge(Geometry geometry, int cacheSize) {
+            super(geometry, cacheSize);
             Point point = (Point) geometry;
             x = point.getX();
             y = point.getY();
@@ -157,8 +171,8 @@ public class BigShape {
     private static class OtherIntersectsJudge extends IntersectsJudge {
         private final GeometryFactory geometryFactory = new GeometryFactory();
 
-        public OtherIntersectsJudge(Geometry geometry) {
-            super(geometry);
+        public OtherIntersectsJudge(Geometry geometry, int cacheSize) {
+            super(geometry, cacheSize);
         }
 
         @Override
