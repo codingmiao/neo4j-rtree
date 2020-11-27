@@ -8,7 +8,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.Constant;
-import org.wowtools.neo4j.rtree.RTreeIndexManager;
 import org.wowtools.neo4j.rtree.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.bigshape.pojo.Grid;
 import org.wowtools.neo4j.rtree.bigshape.util.GridCuter;
@@ -23,16 +22,32 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * BigShape管理类
+ *
  * @author liuyu
  * @date 2020/11/24
  */
 public class BigShapeManager {
-
+    /**
+     * grid关键属性存储的字段名，关键属性:当格子被完全覆盖时存储bbox，否则存储相交geometry
+     */
     public static final String keyFieldName = "g";
+    /**
+     * rtree索引名字 前缀
+     */
     private static final String indexNamePrefix = "BigShapeSidx_";
-
+    /**
+     * 建索引的锁
+     */
     private static final Object createRTreeIndexLock = new Object();
 
+    /**
+     * 获取一个BigShape
+     *
+     * @param database 图库
+     * @param id       BigShape id
+     * @return
+     */
     public static BigShape get(GraphDatabaseService database, String id) {
         String indexName = indexNamePrefix + id;
         int maxNodeReferences;
@@ -59,6 +74,7 @@ public class BigShapeManager {
      * @param column   切成几列
      */
     public static void build(GraphDatabaseService database, String id, Geometry geometry, int row, int column) {
+        /** 0、构造一个rtree索引 **/
         String indexName = indexNamePrefix + id;
         Map<Long, Envelope> envelopeMap = new HashMap<>();//缓存一个bbox，防止多次读取
         RTreeIndex rTreeIndex;
@@ -71,9 +87,9 @@ public class BigShapeManager {
             rTreeIndex = new RTreeIndex(indexName, keyFieldName, database,
                     new BigShapeWriteEnvelopeDecoder(envelopeMap), 2, 0, true);
         }
-
+        /** 1、切割geometry **/
         List<Grid> grids = GridCuter.cut(geometry, row, column);
-
+        /** 2、 将切割结果写入索引 **/
         WKBWriter wkbWriter = new WKBWriter();
         try (Transaction tx = database.beginTx()) {
             List<Node> geomNodes = new LinkedList<>();
@@ -96,6 +112,9 @@ public class BigShapeManager {
 
     }
 
+    /**
+     * 写索引时的bbox获取器，直接从缓存map中获取
+     */
     private static final class BigShapeWriteEnvelopeDecoder implements EnvelopeDecoder {
         private final Map<Long, Envelope> envelopeMap;
 
@@ -109,6 +128,9 @@ public class BigShapeManager {
         }
     }
 
+    /**
+     * 写索引时的bbox获取器，从关键字段中获取
+     */
     private static final class BigShapeReadEnvelopeDecoder implements EnvelopeDecoder {
         private final WKBReader wkbReader = new WKBReader();
 

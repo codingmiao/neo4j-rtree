@@ -14,7 +14,6 @@ import org.wowtools.neo4j.rtree.bigshape.BigShapeManager;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.util.BboxIntersectUtil;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
-import org.wowtools.neo4j.rtree.util.RtreeTraverser;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -34,17 +33,16 @@ public class BigShape {
         this.rTreeIndex = rTreeIndex;
     }
 
-    /**
-     * 计算输入的geometry是否与本BigShape的相交部分
-     *
-     * @param tx 图数据库事务
-     * @param g  输入geometry
-     * @return
-     */
-    public Geometry intersection(Transaction tx, Geometry g) {
-        //TODO
-        return null;
-    }
+//    /**
+//     * 计算输入的geometry是否与本BigShape的相交部分
+//     * TODO 下个版本再实现
+//     * @param tx 图数据库事务
+//     * @param g  输入geometry
+//     * @return
+//     */
+//    public Geometry intersection(Transaction tx, Geometry g) {
+//        return null;
+//    }
 
     /**
      * 判断输入的geometry是否与本BigShape相交
@@ -131,6 +129,9 @@ public class BigShape {
         }
     }
 
+    /**
+     * 点相交判断
+     */
     private static class PointIntersectsJudge extends IntersectsJudge {
 
         private final double x;
@@ -150,6 +151,9 @@ public class BigShape {
 
     }
 
+    /**
+     * 其它geometry相交判断
+     */
     private static class OtherIntersectsJudge extends IntersectsJudge {
         private final GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -167,12 +171,4 @@ public class BigShape {
 
     }
 
-    /**
-     * 获取本BigShape的geometry
-     *
-     * @return
-     */
-    public Geometry getGeometry() {
-        return null;
-    }
 }

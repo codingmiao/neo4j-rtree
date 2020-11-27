@@ -47,6 +47,7 @@ public class GridCuter {
         Coordinate c0, c1, c2, c3;//网格的四个顶点,左下角起逆时针
         GeometryFactory geometryFactory = new GeometryFactory();
         List<Grid> res = new LinkedList<>();
+        //按从左下角逐行上移、逐列右移的方式遍历所有格子并进行相交分析
         do {
             ymin = bbox.ymin;
             ymax = ymin + height;
