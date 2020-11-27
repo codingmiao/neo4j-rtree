@@ -5,14 +5,14 @@
 
 ## 这个项目能干什么
 
-新建空间索引
+### 新建空间索引
 ~~~java
 //5个参数依次是:  neo4j的GraphDatabaseService实例    索引名(唯一) 空间属性名   rtree最大子节点数 最大缓存geometry对象数
 RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64, 1024);
 ~~~
 
 
-简洁地为node加入空间索引:
+### 简洁地为node加入空间索引:
 ~~~java
 Transaction tx = db.beginTx();
 Node node = tx.createNode(testLabel);//新建节点
@@ -23,7 +23,7 @@ rTreeIndex.add(node,tx);//加入索引(效率起见，多个node的话用list ad
 
 ~~~
 
-空间查询
+### 空间查询
 ~~~java
 //输入一个矩形范围，查询矩形覆盖的节点
 double[] bbox = new double[]{3, 1, 8, 9};
@@ -45,7 +45,7 @@ try (Transaction tx = db.beginTx()) {
 }
 ~~~
 
-最邻近搜索
+### 最邻近搜索
 ~~~java
 //查询距离点(10.2, 13.2)最近的5个node
 try (Transaction tx = db.beginTx()) {
@@ -61,11 +61,22 @@ try (Transaction tx = db.beginTx()) {
     System.out.println(res);//DistanceResult里包含了node、距离以及geometry，详见测试用例
 }
 ~~~
-
+### 精细对象的快速空间分析
+对于非常精细的geometry，由于它包含了太多的点，直接用jts的intersects等函数去进行空间关系计算性能会很差，此时，可以考虑用BigShapeManager工具将其切割开并建立索引后再分析：
+~~~java
+String wkt = "...";//一个很多点构成的多边形
+Geometry geometry = wktReader.read(wkt);
+String indexId = "123";//声明一个id来构建索引，注意id唯一性
+BigShapeManager.build(graphDb, indexId, geometry, 10, 10);//切割多边形为10行10列并构建索引
+BigShape bigShape = BigShapeManager.get(graphDb, indexId);//获取到BigShape对象
+Geometry s1 = new WKTReader().read("POINT (866.8184900283813 132.99309968948364)");
+System.out.println(bigShape.intersects(tx, s1));//利用BigShape来做空间关系计算
+~~~
+实测对于精细复杂的geometry，BigShape的性能比直接jts快了上百倍（简单的geometry就不要BigShape切割了，否则可能反而性能下降）
 
 
 ## install
-The latest version is `1.3.0`
+The latest version is `1.4.0`
 
 maven import in your project
 ```
