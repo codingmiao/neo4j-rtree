@@ -5,14 +5,14 @@ a spatial index for neo4j 4.x.
 
 ## What can it do
 
-create a spatial index
+### create a spatial index
 ~~~java
 //5个参数依次是:  neo4j的GraphDatabaseService实例    索引名(唯一) 空间属性名   rtree最大子节点数 最大缓存geometry对象数
 RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64, 1024);
 ~~~
 
 
-add node(s) to spatial index
+### add node(s) to spatial index
 ~~~java
 Transaction tx = db.beginTx();
 Node node = tx.createNode(testLabel);//create node
@@ -23,7 +23,7 @@ rTreeIndex.add(node,tx);//add to spatial index(if you have many vertices, add as
 
 ~~~
 
-spatial query
+### spatial query
 ~~~java
 //Enter a rectangle and query the node covered by the rectangle
 double[] bbox = new double[]{3, 1, 8, 9};
@@ -45,7 +45,7 @@ try (Transaction tx = db.beginTx()) {
 }
 ~~~
 
-nearest neighbor search
+### nearest neighbor search
 ~~~java
 //Query the 5 nodes closest to point (10.2, 13.2)
 try (Transaction tx = db.beginTx()) {
@@ -61,11 +61,22 @@ try (Transaction tx = db.beginTx()) {
     System.out.println(res);//DistanceResult里包含了node、距离以及geometry，详见测试用例
 }
 ~~~
-
+### Faster spatial analysis of big geometry
+As for very fine geometry, because it contains too many points, the performance of spatial relationship calculation by using JTS's ``intersects`` function directly will be poor. At this point, it can be considered to use the Tool BigShapeManager to cut it open and establish index before analysis:
+~~~java
+String wkt = "...";//一个很多点构成的多边形
+Geometry geometry = wktReader.read(wkt);
+String indexId = "123";//声明一个id来构建索引，注意id唯一性
+BigShapeManager.build(graphDb, indexId, geometry, 10, 10);//切割多边形为10行10列并构建索引
+BigShape bigShape = BigShapeManager.get(graphDb, indexId);//获取到BigShape对象
+Geometry s1 = new WKTReader().read("POINT (866.8184900283813 132.99309968948364)");
+System.out.println(bigShape.intersects(tx, s1));//利用BigShape来做空间关系计算
+~~~
+The actual measurement performance of BigShape is up to 100 times faster than that of direct JTS for fine and complex geometry (simple geometry does not need BigShape cutting, otherwise the performance may decline)
 
 
 ## install
-The latest version is `1.3.0`
+The latest version is `1.4.0`
 
 maven import in your project
 ```
