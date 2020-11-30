@@ -3,6 +3,7 @@ package org.wowtools.neo4j.rtree.bigshape.util;
 import org.locationtech.jts.geom.*;
 import org.wowtools.neo4j.rtree.bigshape.pojo.Grid;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +46,6 @@ public class GridCuter {
         double height = (bbox.ymax - bbox.ymin) / row;
         double xmin = bbox.xmin, ymin, xmax = xmin + width, ymax;
         Coordinate c0, c1, c2, c3;//网格的四个顶点,左下角起逆时针
-        GeometryFactory geometryFactory = new GeometryFactory();
         List<Grid> res = new LinkedList<>();
         //按从左下角逐行上移、逐列右移的方式遍历所有格子并进行相交分析
         do {
@@ -56,7 +56,7 @@ public class GridCuter {
             c2 = new Coordinate(xmax, ymax);
             c3 = new Coordinate(xmin, ymax);
             do {
-                Polygon bboxGeometry = geometryFactory.createPolygon(new Coordinate[]{
+                Polygon bboxGeometry = Singleton.geometryFactory.createPolygon(new Coordinate[]{
                         c0, c1, c2, c3, c0
                 });
                 Geometry intersectionGeometry = geometry.intersection(bboxGeometry);

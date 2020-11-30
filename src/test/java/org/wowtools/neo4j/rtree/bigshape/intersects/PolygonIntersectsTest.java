@@ -15,6 +15,7 @@ import org.wowtools.neo4j.rtree.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.bigshape.util.GridCuterTest1;
 import org.wowtools.neo4j.rtree.bigshape.util.SelfIntersectingDispose;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.Random;
 
@@ -48,7 +49,6 @@ public class PolygonIntersectsTest extends TestCase {
 
     private void testQuery(Geometry geometry) throws Exception {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
@@ -57,7 +57,7 @@ public class PolygonIntersectsTest extends TestCase {
                         bbox.xmin + random.nextFloat() * (bbox.xmax - bbox.xmin),
                         bbox.ymin + random.nextFloat() * (bbox.ymax - bbox.ymin)
                 );
-                Geometry geo = geometryFactory.createPoint(c0).buffer(random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin));
+                Geometry geo = Singleton.geometryFactory.createPoint(c0).buffer(random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin));
                 boolean r1 = bigShape.intersects(tx, geo);
                 boolean r2 = geometry.intersects(geo);
                 System.out.println(r2 + "\t" + geo.toText());
@@ -77,7 +77,6 @@ public class PolygonIntersectsTest extends TestCase {
 
     private void testSpeed(Geometry geometry) {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         Geometry[] geos = new Geometry[testNum];
@@ -86,7 +85,7 @@ public class PolygonIntersectsTest extends TestCase {
                     bbox.xmin + random.nextFloat() * (bbox.xmax - bbox.xmin),
                     bbox.ymin + random.nextFloat() * (bbox.ymax - bbox.ymin)
             );
-            Geometry geo = geometryFactory.createPoint(c0).buffer(random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin));
+            Geometry geo = Singleton.geometryFactory.createPoint(c0).buffer(random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin));
             geos[i] = geo;
         }
         long t;

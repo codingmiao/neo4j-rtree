@@ -7,7 +7,6 @@ package org.wowtools.neo4j.rtree.nearest;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.Direction;
@@ -16,6 +15,7 @@ import org.neo4j.graphdb.Relationship;
 import org.wowtools.neo4j.rtree.Constant;
 import org.wowtools.neo4j.rtree.RtreeNearestQuery;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.*;
 
@@ -37,7 +37,7 @@ public class NearestNeighbour {
         this.x = x;
         this.y = y;
         this.rTreeIndex = rTreeIndex;
-        point = new GeometryFactory().createPoint(new Coordinate(x, y));
+        point = Singleton.geometryFactory.createPoint(new Coordinate(x, y));
     }
 
     /**

@@ -3,7 +3,6 @@ package org.wowtools.neo4j.rtree;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBWriter;
@@ -13,6 +12,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -49,7 +49,6 @@ public class StripGeometryIntersectsTest {
         }
         HashSet<String> intersectWkt = new HashSet<>();
         //随机写入测试数据(一堆范围内的三角形)
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
         Random random = new Random(233);
         try (Transaction tx = db.beginTx()) {
@@ -61,7 +60,7 @@ public class StripGeometryIntersectsTest {
                 coords[1] = new Coordinate(coords[0].x + random.nextDouble(), coords[0].y);
                 coords[2] = new Coordinate(coords[1].x + random.nextDouble() - 0.5, coords[1].y + random.nextDouble());
                 coords[3] = coords[0];
-                Polygon geo = gf.createPolygon(coords);
+                Polygon geo = Singleton.geometryFactory.createPolygon(coords);
                 byte[] wkb = wkbWriter.write(geo);//转为wkb
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)

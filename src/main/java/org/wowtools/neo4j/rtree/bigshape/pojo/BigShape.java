@@ -1,7 +1,6 @@
 package org.wowtools.neo4j.rtree.bigshape.pojo;
 
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
 import org.neo4j.graphdb.Direction;
@@ -169,7 +168,6 @@ public class BigShape {
      * 其它geometry相交判断
      */
     private static class OtherIntersectsJudge extends IntersectsJudge {
-        private final GeometryFactory geometryFactory = new GeometryFactory();
 
         public OtherIntersectsJudge(Geometry geometry, int cacheSize) {
             super(geometry, cacheSize);
@@ -180,7 +178,7 @@ public class BigShape {
             if (!BboxIntersectUtil.bboxIntersect(geoBbox, bbox)) {
                 return false;//bbox不相交的话肯定不会相交
             }
-            return geometry.intersects(BboxIntersectUtil.bbox2Geometry(bbox, geometryFactory));
+            return geometry.intersects(BboxIntersectUtil.bbox2Geometry(bbox));
         }
 
     }

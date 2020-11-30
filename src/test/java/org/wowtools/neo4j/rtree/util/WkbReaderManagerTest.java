@@ -22,7 +22,7 @@ public class WkbReaderManagerTest extends TestCase {
         for (int i = 0; i < 500; i++) {
             final double d = i;
             new Thread(()->{
-                byte[] wkb = new WKBWriter().write(new GeometryFactory().createPoint(new Coordinate(d, d)));
+                byte[] wkb = new WKBWriter().write(Singleton.geometryFactory.createPoint(new Coordinate(d, d)));
                 try {
                     wkbReader.read(wkb);
                 } catch (Exception e) {

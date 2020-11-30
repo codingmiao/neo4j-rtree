@@ -11,6 +11,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -35,14 +36,13 @@ public class QueryByGeometryTest {
             throw new RuntimeException(e);
         }
         //随机写入测试数据
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
         Random random = new Random(233);
         try (Transaction tx = db.beginTx()) {
             List<Node> sidxList = new LinkedList<>();
             for (int i = 0; i < geoNum; i++) {
                 Node node = tx.createNode(testLabel);//新建节点
-                Point geo = gf.createPoint(new Coordinate(random.nextDouble() * 100, random.nextDouble() * 100));//构建一个geometry,POINT(x y)
+                Point geo = Singleton.geometryFactory.createPoint(new Coordinate(random.nextDouble() * 100, random.nextDouble() * 100));//构建一个geometry,POINT(x y)
                 byte[] wkb = wkbWriter.write(geo);//转为wkb
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)
@@ -85,7 +85,6 @@ public class QueryByGeometryTest {
         HashSet<String> intersectWkt = new HashSet<>();
 
         //随机写入测试数据
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
         Random random = new Random(233);
         try (Transaction tx = db.beginTx()) {
@@ -100,7 +99,7 @@ public class QueryByGeometryTest {
                 for (int i1 = 0; i1 < lineNum; i1++) {
                     coords[i1] = new Coordinate(random.nextDouble() * 100, random.nextDouble() * 100);
                 }
-                LineString geo = gf.createLineString(coords);
+                LineString geo = Singleton.geometryFactory.createLineString(coords);
                 byte[] wkb = wkbWriter.write(geo);//转为wkb
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)
@@ -140,7 +139,6 @@ public class QueryByGeometryTest {
         }
         HashSet<String> intersectWkt = new HashSet<>();
         //随机写入测试数据
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
         Random random = new Random(233);
         try (Transaction tx = db.beginTx()) {
@@ -156,7 +154,7 @@ public class QueryByGeometryTest {
                     coords[i1] = new Coordinate(random.nextDouble() * 100, random.nextDouble() * 100);
                 }
                 coords[lineNum-1] = coords[0];
-                Polygon geo = gf.createPolygon(coords);
+                Polygon geo = Singleton.geometryFactory.createPolygon(coords);
                 byte[] wkb = wkbWriter.write(geo);//转为wkb
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                 node.setProperty(wktFileName, geo.toText());//设置其他值(可选)

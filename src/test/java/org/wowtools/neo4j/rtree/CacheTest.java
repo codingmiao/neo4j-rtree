@@ -10,6 +10,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -86,7 +87,6 @@ public class CacheTest {
         }
         HashSet<String> intersectWkt = new HashSet<>();
         //随机写入测试数据(一堆范围内的三角形)
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
         Random random = new Random(233);
         try (Transaction tx = db.beginTx()) {
@@ -97,7 +97,7 @@ public class CacheTest {
                 for (int i1 = 0; i1 < pointNum; i1++) {
                     coordinates[i1] = new Coordinate(random.nextDouble() * 100, random.nextDouble() * 100);
                 }
-                Geometry geo = gf.createLineString(coordinates);
+                Geometry geo = Singleton.geometryFactory.createLineString(coordinates);
 //                geo = geo.buffer(1);
                 byte[] wkb = wkbWriter.write(geo);//转为wkb
                 node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式

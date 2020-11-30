@@ -18,22 +18,15 @@ package org.wowtools.neo4j.rtree;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
-import org.locationtech.jts.io.WKBWriter;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
 import org.wowtools.neo4j.rtree.util.RtreeTraverser;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bbox2Geometry;
 import static org.wowtools.neo4j.rtree.util.BboxIntersectUtil.bboxIntersect;
@@ -116,9 +109,8 @@ public class RtreeQuery {
          */
         public BboxSpatialFilter(double[] bbox) {
             this.bbox = bbox;
-            GeometryFactory gf = new GeometryFactory();
             Coordinate c0 = new Coordinate(bbox[0], bbox[1]);
-            Polygon bboxPolygon = gf.createPolygon(new Coordinate[]{
+            Polygon bboxPolygon = Singleton.geometryFactory.createPolygon(new Coordinate[]{
                     c0,
                     new Coordinate(bbox[2], bbox[1]),
                     new Coordinate(bbox[2], bbox[3]),
@@ -205,11 +197,10 @@ public class RtreeQuery {
      * @param visitor    结果访问器
      */
     public static void queryByStripGeometryIntersects(Transaction tx, RTreeIndex rTreeIndex, Geometry geometry, NodeVisitor visitor) {
-        final GeometryFactory gf = new GeometryFactory();
-        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex,new GeometryIntersectsSpatialFilter(geometry),visitor);
-        RtreeTraverser.traverse(tx,rTreeIndex,
+        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex, new GeometryIntersectsSpatialFilter(geometry), visitor);
+        RtreeTraverser.traverse(tx, rTreeIndex,
                 (rtreeNode, nodeBbox) -> {
-                    Geometry nodeGeo = bbox2Geometry(nodeBbox, gf);
+                    Geometry nodeGeo = bbox2Geometry(nodeBbox);
                     return nodeGeo.intersects(geometry);
                 },
                 myObjNodeVisitor
@@ -226,8 +217,8 @@ public class RtreeQuery {
      */
     public static void queryBySpatialFilter(Transaction tx, RTreeIndex rTreeIndex, SpatialFilter spatialFilter, NodeVisitor visitor) {
         double[] bbox = spatialFilter.getBbox();
-        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex,spatialFilter,visitor);
-        RtreeTraverser.traverse(tx,rTreeIndex,
+        MyObjNodeVisitor myObjNodeVisitor = new MyObjNodeVisitor(rTreeIndex, spatialFilter, visitor);
+        RtreeTraverser.traverse(tx, rTreeIndex,
                 (rtreeNode, nodeBbox) -> bboxIntersect(bbox, nodeBbox),
                 myObjNodeVisitor
         );

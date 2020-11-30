@@ -15,6 +15,7 @@ import org.wowtools.neo4j.rtree.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.bigshape.util.GridCuterTest1;
 import org.wowtools.neo4j.rtree.bigshape.util.SelfIntersectingDispose;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.Random;
 import java.util.Scanner;
@@ -49,12 +50,11 @@ public class PointIntersectsTest extends TestCase {
 
     private void testQuery(Geometry geometry) throws Exception {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
             for (int i = 0; i < testNum; i++) {
-                Point point = geometryFactory.createPoint(new Coordinate(
+                Point point = Singleton.geometryFactory.createPoint(new Coordinate(
                         bbox.xmin + random.nextFloat() * (bbox.xmax - bbox.xmin),
                         bbox.ymin + random.nextFloat() * (bbox.ymax - bbox.ymin)
                 ));
@@ -77,12 +77,11 @@ public class PointIntersectsTest extends TestCase {
 
     private void testSpeed(Geometry geometry) {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         Geometry[] points = new Geometry[testNum];
         for (int i = 0; i < testNum; i++) {
-            Point point = geometryFactory.createPoint(new Coordinate(
+            Point point = Singleton.geometryFactory.createPoint(new Coordinate(
                     bbox.xmin + random.nextFloat() * (bbox.xmax - bbox.xmin),
                     bbox.ymin + random.nextFloat() * (bbox.ymax - bbox.ymin)
             ));

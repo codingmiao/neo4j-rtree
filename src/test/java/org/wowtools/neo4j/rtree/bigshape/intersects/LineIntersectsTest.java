@@ -12,6 +12,7 @@ import org.wowtools.neo4j.rtree.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.bigshape.util.GridCuterTest1;
 import org.wowtools.neo4j.rtree.bigshape.util.SelfIntersectingDispose;
 import org.wowtools.neo4j.rtree.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.Random;
 
@@ -45,7 +46,6 @@ public class LineIntersectsTest extends TestCase {
 
     private void testQuery(Geometry geometry) throws Exception {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
@@ -62,7 +62,7 @@ public class LineIntersectsTest extends TestCase {
                         c1.x + random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin),
                         c1.y + random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin)
                 );
-                LineString geo = geometryFactory.createLineString(new Coordinate[]{c0, c1, c2});
+                LineString geo = Singleton.geometryFactory.createLineString(new Coordinate[]{c0, c1, c2});
                 boolean r1 = bigShape.intersects(tx, geo);
                 boolean r2 = geometry.intersects(geo);
                 System.out.println(r2+"\t"+geo.toText());
@@ -82,7 +82,6 @@ public class LineIntersectsTest extends TestCase {
 
     private void testSpeed(Geometry geometry) {
         BigShape bigShape = BigShapeManager.get(Neo4jDbManager.getGraphDb(), indexId);
-        GeometryFactory geometryFactory = new GeometryFactory();
         GeometryBbox.Bbox bbox = GeometryBbox.getBbox(geometry);
         Random random = new Random(233);
         Geometry[] geos = new Geometry[testNum];
@@ -99,7 +98,7 @@ public class LineIntersectsTest extends TestCase {
                     c1.x + random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin),
                     c1.y + random.nextFloat() * 0.05 * (bbox.xmax - bbox.xmin)
             );
-            LineString geo = geometryFactory.createLineString(new Coordinate[]{c0, c1, c2});
+            LineString geo = Singleton.geometryFactory.createLineString(new Coordinate[]{c0, c1, c2});
             geos[i] = geo;
         }
         long t;

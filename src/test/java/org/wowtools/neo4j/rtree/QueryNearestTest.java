@@ -11,6 +11,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.nearest.DistanceResult;
 import org.wowtools.neo4j.rtree.spatial.RTreeIndex;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -29,7 +30,6 @@ public class QueryNearestTest {
     private void testPoint(GraphDatabaseService db, RTreeIndex rTreeIndex) {
 
         //随机写入测试数据
-        GeometryFactory gf = new GeometryFactory();
         WKBWriter wkbWriter = new WKBWriter();
 
         try (Transaction tx = db.beginTx()) {
@@ -37,7 +37,7 @@ public class QueryNearestTest {
             for (int x = 0; x < 100; x++) {
                 for (int y = 0; y < 100; y++) {
                     Node node = tx.createNode(testLabel);//新建节点
-                    Point geo = gf.createPoint(new Coordinate(x, y));//构建一个geometry,POINT(x y)
+                    Point geo = Singleton.geometryFactory.createPoint(new Coordinate(x, y));//构建一个geometry,POINT(x y)
                     byte[] wkb = wkbWriter.write(geo);//转为wkb
                     node.setProperty(geometryFileName, wkb);//设置空间字段值,必须为wkb格式
                     node.setProperty(wktFileName, geo.toText());//设置其他值(可选)

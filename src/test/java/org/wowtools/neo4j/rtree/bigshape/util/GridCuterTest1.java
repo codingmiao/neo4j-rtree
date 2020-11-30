@@ -5,6 +5,7 @@ import org.locationtech.jts.io.WKBReader;
 import org.locationtech.jts.io.WKTReader;
 import org.wowtools.common.utils.ResourcesReader;
 import org.wowtools.neo4j.rtree.bigshape.pojo.Grid;
+import org.wowtools.neo4j.rtree.util.Singleton;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class GridCuterTest1 {
             geos[i] = grid.getGeometry();
             i++;
         }
-        GeometryCollection geogrid = new GeometryFactory().createGeometryCollection(geos);
+        GeometryCollection geogrid = Singleton.geometryFactory.createGeometryCollection(geos);
         assertTrue(geogrid.buffer(0).equalsTopo(SelfIntersectingDispose.validate(geogrid).buffer(0)));
     }
 }

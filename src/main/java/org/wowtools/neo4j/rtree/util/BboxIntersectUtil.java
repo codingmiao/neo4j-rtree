@@ -2,7 +2,6 @@ package org.wowtools.neo4j.rtree.util;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 
 /**
@@ -48,10 +47,9 @@ public class BboxIntersectUtil {
     /**
      * bbo转为geometry
      * @param bbox bbox
-     * @param gf GeometryFactory 为了防止频繁创建而直接传入
      * @return geometry
      */
-    public static Geometry bbox2Geometry(double[] bbox, GeometryFactory gf) {
+    public static Geometry bbox2Geometry(double[] bbox) {
         Coordinate[] shell = new Coordinate[5];
         double xmin = bbox[0], ymin = bbox[1], xmax = bbox[2], ymax = bbox[3];
         shell[0] = new Coordinate(xmin, ymin);
@@ -59,7 +57,7 @@ public class BboxIntersectUtil {
         shell[2] = new Coordinate(xmax, ymax);
         shell[3] = new Coordinate(xmin, ymax);
         shell[4] = shell[0];
-        Polygon bboxGeo = gf.createPolygon(shell);
+        Polygon bboxGeo = Singleton.geometryFactory.createPolygon(shell);
         return bboxGeo;
     }
 
