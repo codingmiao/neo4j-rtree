@@ -150,6 +150,7 @@ public class RtreeEditor implements AutoCloseable {
                 r.delete();
                 mMax = (int) metadataNode.getProperty("mMax");
                 metadataNode.delete();
+                tx.commit();
             }
         }
         //删掉树上的节点
@@ -178,6 +179,7 @@ public class RtreeEditor implements AutoCloseable {
                 }
                 node.delete();
             } while (!stack.isEmpty());
+            tx.commit();
         }
     }
 

@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.geometry2dold.Neo4jDbManager;
+import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.BooleanDataNodeVisitor;
@@ -137,7 +138,21 @@ public class RtreeEditorTest {
         Assert.assertEquals(resNum, myVisitor.num);
         // end update
 
-//        Scanner sin = new Scanner(System.in);
+
+        //drop
+        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+            RtreeEditor.drop(Neo4jDbManager.getGraphDb(), indexName, (nodeId) -> {
+//                tx.getNodeById(nodeId).delete();
+            });
+        }
+        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+            tx.findNodes(Labels.METADATA).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
+            tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
+            tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
+        }
+        //drop end
+
+//        java.util.Scanner sin = new java.util.Scanner(System.in);
 //        sin.next();
     }
 
