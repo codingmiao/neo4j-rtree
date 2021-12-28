@@ -11,9 +11,9 @@ import org.wowtools.neo4j.rtree.geometry2dold.Constant;
 import org.wowtools.neo4j.rtree.geometry2dold.bigshape.pojo.BigShape;
 import org.wowtools.neo4j.rtree.geometry2dold.bigshape.pojo.Grid;
 import org.wowtools.neo4j.rtree.geometry2dold.bigshape.util.GridCuter;
+import org.wowtools.neo4j.rtree.geometry2dold.spatial.Envelope;
 import org.wowtools.neo4j.rtree.geometry2dold.spatial.EnvelopeDecoder;
 import org.wowtools.neo4j.rtree.geometry2dold.spatial.RTreeIndex;
-import org.wowtools.neo4j.rtree.geometry2dold.spatial.Envelope;
 import org.wowtools.neo4j.rtree.geometry2dold.util.GeometryBbox;
 
 import java.util.HashMap;

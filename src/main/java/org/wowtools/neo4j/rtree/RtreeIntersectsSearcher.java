@@ -12,12 +12,12 @@ import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.BooleanDataNodeVisitor;
 
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
  * 相交关系查询器
- * 查询器
  *
  * @author liuyu
  * @date 2021/12/24
@@ -35,7 +35,7 @@ public class RtreeIntersectsSearcher {
     }
 
     /**
-     * 获取索引
+     * 获取查询器
      *
      * @param tx   事务 此事务需要在外部手动关闭
      * @param name 索引名
@@ -64,7 +64,11 @@ public class RtreeIntersectsSearcher {
         readLock.lock();
         try {
             Node metadataNode = tx.getNodeById(metadataNodeId);
-            Node node = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT).iterator().next().getEndNode();
+            Iterator<Relationship> iterator = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT).iterator();
+            if (!iterator.hasNext()) {
+                return;
+            }
+            Node node = iterator.next().getEndNode();
             ArrayDeque<Node> stack = new ArrayDeque<>();
             stack.push(node);
             do {

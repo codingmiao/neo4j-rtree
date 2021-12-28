@@ -4,6 +4,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 
 /**
  * 单例对象类
+ *
  * @author liuyu
  * @date 2020/11/30
  */

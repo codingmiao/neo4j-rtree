@@ -1,9 +1,12 @@
 package org.wowtools.neo4j.rtree.geometry2dold.bigshape.util;
 
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.TopologyException;
 import org.wowtools.neo4j.rtree.geometry2dold.bigshape.pojo.Grid;
-import org.wowtools.neo4j.rtree.geometry2dold.util.Singleton;
 import org.wowtools.neo4j.rtree.geometry2dold.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.geometry2dold.util.Singleton;
 
 import java.util.LinkedList;
 import java.util.List;

@@ -729,8 +729,6 @@ public class RTreeIndex {
     }
 
 
-
-
     // quick dirty way to partition a set into equal sized disjoint subsets
     // - TODO why not use list.sublist() without copying ?
 

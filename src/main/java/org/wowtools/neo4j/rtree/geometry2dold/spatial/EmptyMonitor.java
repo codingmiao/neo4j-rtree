@@ -1,19 +1,19 @@
 /**
  * Copyright (c) 2002-2013 "Neo Technology," Network Engine for Objects in Lund
  * AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j Spatial.
- *
+ * <p>
  * Neo4j is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,32 +26,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class EmptyMonitor implements TreeMonitor
-{
+public class EmptyMonitor implements TreeMonitor {
     @Override
-    public void setHeight(int height)
-    {
+    public void setHeight(int height) {
     }
 
-    public int getHeight()
-    {
+    public int getHeight() {
         return -1;
     }
 
     @Override
-    public void addNbrRebuilt(RTreeIndex rtree)
-    {
+    public void addNbrRebuilt(RTreeIndex rtree) {
     }
 
     @Override
-    public int getNbrRebuilt()
-    {
+    public int getNbrRebuilt() {
         return -1;
     }
 
     @Override
-    public void addSplit(Node indexNode)
-    {
+    public void addSplit(Node indexNode) {
 
     }
 
@@ -66,8 +60,7 @@ public class EmptyMonitor implements TreeMonitor
     }
 
     @Override
-    public int getNbrSplit()
-    {
+    public int getNbrSplit() {
         return -1;
     }
 
@@ -82,8 +75,7 @@ public class EmptyMonitor implements TreeMonitor
     }
 
     @Override
-    public void reset()
-    {
+    public void reset() {
 
     }
 

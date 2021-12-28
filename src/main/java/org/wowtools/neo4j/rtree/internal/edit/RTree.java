@@ -84,22 +84,22 @@ public final class RTree implements SpatialSearch {
     }
 
     @Override
-    public int search(final HyperRect rect, final RectNd[] t) {
+    public int search(final RectNd rect, final RectNd[] t) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void search(HyperRect rect, Consumer consumer) {
+    public void search(RectNd rect, Consumer consumer) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void search(HyperRect rect, Collection collection) {
+    public void search(RectNd rect, Collection collection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int intersects(final HyperRect rect, final RectNd[] t) {
+    public int intersects(final RectNd rect, final RectNd[] t) {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
         if (root != null) {
             return root.intersects(rect, t, 0);
@@ -108,7 +108,7 @@ public final class RTree implements SpatialSearch {
     }
 
     @Override
-    public void intersects(HyperRect rect, Consumer consumer) {
+    public void intersects(RectNd rect, Consumer consumer) {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
         if (root != null) {
             root.intersects(rect, consumer);
@@ -173,7 +173,7 @@ public final class RTree implements SpatialSearch {
     public boolean contains(final RectNd t) {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
         if (root != null) {
-            final HyperRect bbox = builder.getBBox(t);
+            final RectNd bbox = builder.getBBox(t);
             return root.contains(bbox, t);
         }
         return false;

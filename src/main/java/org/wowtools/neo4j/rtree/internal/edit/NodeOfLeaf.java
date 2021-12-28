@@ -20,8 +20,8 @@ package org.wowtools.neo4j.rtree.internal.edit;
  * #L%
  */
 
-import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.function.Consumer;
@@ -71,8 +71,8 @@ abstract class NodeOfLeaf implements Node {
     public Node add(final RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         if (size < mMax) {
-            HyperRect mbr = cacheNode.getMbr();
-            final HyperRect tRect = builder.getBBox(t);
+            RectNd mbr = cacheNode.getMbr();
+            final RectNd tRect = builder.getBBox(t);
             if (mbr != null) {
                 mbr = mbr.getMbr(tRect);
             } else {
@@ -109,7 +109,7 @@ abstract class NodeOfLeaf implements Node {
 
         if (i < j) {
             final int nRemoved = j - i;
-            HyperRect[] r = cacheNode.getR();
+            RectNd[] r = cacheNode.getR();
             if (j < size) {
                 final int nRemaining = size - j;
 //                System.arraycopy(r, j, r, i, nRemaining);
@@ -139,7 +139,7 @@ abstract class NodeOfLeaf implements Node {
             size -= nRemoved;
             cacheNode.setProperty("size", size);
 
-            HyperRect mbr = null;
+            RectNd mbr = null;
             for (int k = 0; k < size; k++) {
                 if (k == 0) {
                     mbr = r[k];
@@ -161,10 +161,10 @@ abstract class NodeOfLeaf implements Node {
     public Node update(final RectNd told, final RectNd tnew) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
-        final HyperRect bbox = builder.getBBox(tnew);
+        RectNd[] r = cacheNode.getR();
+        final RectNd bbox = builder.getBBox(tnew);
 
-        HyperRect mbr = null;
+        RectNd mbr = null;
         for (int i = 0; i < size; i++) {
             if (entry[i].equals(told)) {
                 cacheNode.setRAtI(i, (RectNd) bbox);
@@ -184,12 +184,12 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public int search(final HyperRect rect, final RectNd[] t, int n) {
+    public int search(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size && n < tLen; i++) {
             if (rect.contains(r[i])) {
@@ -200,10 +200,10 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public void search(HyperRect rect, Consumer consumer) {
+    public void search(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
         for (int i = 0; i < size; i++) {
             if (rect.contains(r[i])) {
                 consumer.accept(entry[i]);
@@ -212,13 +212,13 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public int intersects(final HyperRect rect, final RectNd[] t, int n) {
+    public int intersects(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
 
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size && n < tLen; i++) {
             if (rect.intersects(r[i])) {
@@ -229,10 +229,10 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public void intersects(HyperRect rect, Consumer consumer) {
+    public void intersects(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size; i++) {
             if (rect.intersects(r[i])) {
@@ -257,7 +257,7 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public HyperRect getBound() {
+    public RectNd getBound() {
         return cacheNode.getMbr();
     }
 
@@ -285,10 +285,10 @@ abstract class NodeOfLeaf implements Node {
     }
 
     @Override
-    public boolean contains(HyperRect rect, RectNd t) {
+    public boolean contains(RectNd rect, RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size; i++) {
             if (rect.contains(r[i])) {
@@ -319,9 +319,9 @@ abstract class NodeOfLeaf implements Node {
      * @param t      data entry to be added
      */
     protected final void classify(final Node l1Node, final Node l2Node, final RectNd t) {
-        final HyperRect tRect = builder.getBBox(t);
-        final HyperRect l1Mbr = l1Node.getBound().getMbr(tRect);
-        final HyperRect l2Mbr = l2Node.getBound().getMbr(tRect);
+        final RectNd tRect = builder.getBBox(t);
+        final RectNd l1Mbr = l1Node.getBound().getMbr(tRect);
+        final RectNd l2Mbr = l2Node.getBound().getMbr(tRect);
         final double l1CostInc = Math.max(l1Mbr.cost() - (l1Node.getBound().cost() + tRect.cost()), 0.0);
         final double l2CostInc = Math.max(l2Mbr.cost() - (l2Node.getBound().cost() + tRect.cost()), 0.0);
         if (l2CostInc > l1CostInc) {

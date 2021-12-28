@@ -46,6 +46,7 @@ public class BboxIntersectUtil {
 
     /**
      * bbo转为geometry
+     *
      * @param bbox bbox
      * @return geometry
      */

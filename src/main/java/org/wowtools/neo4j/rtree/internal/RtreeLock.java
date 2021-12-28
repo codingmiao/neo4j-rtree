@@ -16,7 +16,7 @@ public class RtreeLock {
     private static final Object createIndexLock = new Object();
 
     public static ReadWriteLock getUseReadWriteLock(String indexName) {
-        synchronized (useReadWriteLocks){
+        synchronized (useReadWriteLocks) {
             ReadWriteLock lock = useReadWriteLocks.get(indexName);
             if (null == lock) {
                 lock = new ReentrantReadWriteLock();
@@ -26,7 +26,7 @@ public class RtreeLock {
         }
     }
 
-    public static Object getCreateIndexLock(){
+    public static Object getCreateIndexLock() {
         return createIndexLock;
     }
 }

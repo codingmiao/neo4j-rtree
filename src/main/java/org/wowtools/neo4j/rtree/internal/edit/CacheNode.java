@@ -1,13 +1,13 @@
 package org.wowtools.neo4j.rtree.internal.edit;
 
-import org.wowtools.neo4j.rtree.pojo.PointNd;
-import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.internal.define.Relationships;
-import org.wowtools.neo4j.rtree.util.TxCell;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.wowtools.neo4j.rtree.internal.define.Relationships;
+import org.wowtools.neo4j.rtree.pojo.PointNd;
+import org.wowtools.neo4j.rtree.pojo.RectNd;
+import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.*;
 
@@ -31,7 +31,7 @@ public class CacheNode {
     private final HashSet<String> changedKey = new HashSet<>();//标记哪些属性发生过变化，commit时统一node.setProperty
     private RectNd mbr;
     private org.wowtools.neo4j.rtree.internal.edit.Node[] children;
-    private HyperRect[] r;
+    private RectNd[] r;
     private RectNd[] entry;
 
     public final NodeType nodeType;
@@ -44,7 +44,7 @@ public class CacheNode {
     }
 
     public void commit() {
-        if (changedKey.size()==0){
+        if (changedKey.size() == 0) {
             return;
         }
         Node node = _node();
@@ -72,7 +72,7 @@ public class CacheNode {
         if (empty == p) {
             return null;
         }
-        if (null != p){
+        if (null != p) {
             return p;
         }
         p = _node().getProperty(key, null);
@@ -170,7 +170,7 @@ public class CacheNode {
     public int addChild(final org.wowtools.neo4j.rtree.internal.edit.Node n) {
         int size = (int) getProperty("size");
         int mMax = (int) getProperty("mMax");
-        HyperRect mbr = getMbr();
+        RectNd mbr = getMbr();
         if (size < mMax) {
             setChildAtI(size, n);
             size += 1;
@@ -198,10 +198,10 @@ public class CacheNode {
         }
     }
 
-    public HyperRect[] getR() {
+    public RectNd[] getR() {
         if (null == r) {
             int mMax = (int) getProperty("mMax");
-            r = new HyperRect[mMax];
+            r = new RectNd[mMax];
             for (int i = 0; i < mMax; i++) {
                 double[] rMinI = (double[]) getProperty("rMin" + i);
                 if (null == rMinI) {

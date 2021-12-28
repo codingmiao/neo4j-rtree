@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.geometry2dold.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.geometry2dold.util.BboxIntersectUtil;
-import org.wowtools.neo4j.rtree.geometry2dold.util.Singleton;
 import org.wowtools.neo4j.rtree.geometry2dold.util.GeometryBbox;
 import org.wowtools.neo4j.rtree.geometry2dold.util.RtreeTraverser;
+import org.wowtools.neo4j.rtree.geometry2dold.util.Singleton;
 
 /**
  * 利用rtree索引进行空间查询

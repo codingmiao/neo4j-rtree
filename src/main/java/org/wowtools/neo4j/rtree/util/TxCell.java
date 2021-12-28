@@ -21,7 +21,7 @@ import java.util.Map;
  * @author liuyu
  * @date 2021/12/17
  */
-public class TxCell{
+public class TxCell {
 
     private Transaction tx;
 

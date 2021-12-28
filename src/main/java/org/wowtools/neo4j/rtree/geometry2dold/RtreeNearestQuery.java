@@ -23,7 +23,7 @@ public class RtreeNearestQuery {
         /**
          * 过滤
          *
-         * @param node 节点
+         * @param node     节点
          * @param geometry geometry
          * @return 返回false则忽略此节点
          */

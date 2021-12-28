@@ -139,7 +139,7 @@ public class RtreeEditorTest {
         // end update
 
 
-        //drop
+//        drop
         try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
             RtreeEditor.drop(Neo4jDbManager.getGraphDb(), indexName, (nodeId) -> {
 //                tx.getNodeById(nodeId).delete();
@@ -150,7 +150,7 @@ public class RtreeEditorTest {
             tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
             tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
         }
-        //drop end
+//        drop end
 
 //        java.util.Scanner sin = new java.util.Scanner(System.in);
 //        sin.next();

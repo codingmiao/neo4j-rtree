@@ -37,7 +37,7 @@ public interface Node {
     /**
      * @return Rect - the bounding rectangle for this node
      */
-    HyperRect getBound();
+    RectNd getBound();
 
     /**
      * Add t to the index
@@ -69,7 +69,7 @@ public interface Node {
      * @param n    - total result count so far (from recursive call)
      * @return result count from search of this node
      */
-    int search(HyperRect rect, RectNd[] t, int n);
+    int search(RectNd rect, RectNd[] t, int n);
 
     /**
      * Visitor pattern:
@@ -79,7 +79,7 @@ public interface Node {
      * @param rect     - limiting rect
      * @param consumer
      */
-    void search(HyperRect rect, Consumer<RectNd> consumer);
+    void search(RectNd rect, Consumer<RectNd> consumer);
 
     /**
      * intersect rect with this node
@@ -89,7 +89,7 @@ public interface Node {
      * @param n    - total result count so far (from recursive call)
      * @return result count from search of this node
      */
-    int intersects(HyperRect rect, RectNd[] t, int n);
+    int intersects(RectNd rect, RectNd[] t, int n);
 
     /**
      * Visitor pattern:
@@ -99,7 +99,7 @@ public interface Node {
      * @param rect     - limiting rect
      * @param consumer
      */
-    void intersects(HyperRect rect, Consumer<RectNd> consumer);
+    void intersects(RectNd rect, Consumer<RectNd> consumer);
 
 
     /**
@@ -107,7 +107,7 @@ public interface Node {
      * @param t
      * @return boolean true if subtree contains t
      */
-    boolean contains(HyperRect rect, RectNd t);
+    boolean contains(RectNd rect, RectNd t);
 
     /**
      * The number of entries in the node

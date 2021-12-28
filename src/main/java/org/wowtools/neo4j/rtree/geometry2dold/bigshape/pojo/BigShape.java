@@ -12,8 +12,8 @@ import org.wowtools.neo4j.rtree.geometry2dold.Constant;
 import org.wowtools.neo4j.rtree.geometry2dold.bigshape.BigShapeManager;
 import org.wowtools.neo4j.rtree.geometry2dold.spatial.RTreeIndex;
 import org.wowtools.neo4j.rtree.geometry2dold.util.BboxIntersectUtil;
-import org.wowtools.neo4j.rtree.geometry2dold.util.WkbReaderManager;
 import org.wowtools.neo4j.rtree.geometry2dold.util.GeometryBbox;
+import org.wowtools.neo4j.rtree.geometry2dold.util.WkbReaderManager;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

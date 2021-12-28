@@ -20,6 +20,7 @@ package org.wowtools.neo4j.rtree.internal.edit;
  * #L%
  */
 
+import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 
 /**
@@ -33,7 +34,7 @@ public interface RectBuilder {
      * @param t - element to bound
      * @return HyperRect impl for this entry
      */
-    HyperRect getBBox(RectNd t);
+    RectNd getBBox(RectNd t);
 
 
     /**
@@ -43,5 +44,5 @@ public interface RectBuilder {
      * @param p2 - second point (bottom-right point, for example)
      * @return HyperRect impl defined by two points
      */
-    HyperRect getMbr(HyperPoint p1, HyperPoint p2);
+    RectNd getMbr(PointNd p1, PointNd p2);
 }

@@ -1,16 +1,14 @@
 package org.wowtools.neo4j.rtree.pojo;
 
-import org.wowtools.neo4j.rtree.internal.edit.HyperPoint;
-import org.wowtools.neo4j.rtree.internal.edit.HyperRect;
 import org.wowtools.neo4j.rtree.internal.edit.RectBuilder;
 
 /**
- * n维矩形
+ * n维外包矩形
  *
  * @author liuyu
  * @date 2021/12/17
  */
-public class RectNd implements HyperRect {
+public final class RectNd {
     private final PointNd min, max;
 
 
@@ -51,9 +49,13 @@ public class RectNd implements HyperRect {
         return Long.hashCode(dataNodeId);
     }
 
-    @Override
-    public HyperRect getMbr(HyperRect r) {
-        RectNd r2 = (RectNd) r;
+    /**
+     * Calculate the resulting mbr when combining param HyperRect with this HyperRect
+     *
+     * @param r2 - mbr to add
+     * @return new HyperRect representing mbr of both HyperRects combined
+     */
+    public RectNd getMbr(RectNd r2) {
         double[] minXs = new double[min.getNDim()];
         double[] maxXs = new double[min.getNDim()];
         for (int i = 0; i < min.getNDim(); i++) {
@@ -68,31 +70,57 @@ public class RectNd implements HyperRect {
         return new RectNd(new PointNd(minXs), new PointNd(maxXs));
     }
 
-    @Override
+    /**
+     * Get number of dimensions used in creating the HyperRect
+     *
+     * @return number of dimensions
+     */
     public int getNDim() {
         return min.getNDim();
     }
 
+    /**
+     * Get the minimum HyperPoint of this HyperRect
+     *
+     * @return min HyperPoint
+     */
     public double[] getMinXs() {
         return min.getXs();
     }
 
-    @Override
-    public HyperPoint getMin() {
+    /**
+     * Get the minimum HyperPoint of this HyperRect
+     *
+     * @return min HyperPoint
+     */
+    public PointNd getMin() {
         return min;
     }
 
+    /**
+     * Get the minimum HyperPoint of this HyperRect
+     *
+     * @return min HyperPoint
+     */
     public double[] getMaxXs() {
         return max.getXs();
     }
 
-    @Override
-    public HyperPoint getMax() {
+    /**
+     * Get the minimum HyperPoint of this HyperRect
+     *
+     * @return min HyperPoint
+     */
+    public PointNd getMax() {
         return max;
     }
 
-    @Override
-    public HyperPoint getCentroid() {
+    /**
+     * Get the HyperPoint representing the center point in all dimensions of this HyperRect
+     *
+     * @return middle HyperPoint
+     */
+    public PointNd getCentroid() {
         double[] avgs = new double[min.getNDim()];
         for (int i = 0; i < min.getNDim(); i++) {
             avgs[i] = (min.getCoord(i) + max.getCoord(i)) / 2;
@@ -100,14 +128,23 @@ public class RectNd implements HyperRect {
         return new PointNd(avgs);
     }
 
-    @Override
+    /**
+     * Calculate the distance between the min and max HyperPoints in given dimension
+     *
+     * @param d - dimension to calculate
+     * @return double - the numeric range of the dimention (min - max)
+     */
     public double getRange(int d) {
         return max.getCoord(d) - min.getCoord(d);
     }
 
-    @Override
-    public boolean contains(HyperRect r) {
-        RectNd r2 = (RectNd) r;
+    /**
+     * Determines if this HyperRect fully encloses parameter HyperRect
+     *
+     * @param r2 - HyperRect to test
+     * @return true if contains, false otherwise
+     */
+    public boolean contains(RectNd r2) {
         for (int i = 0; i < min.getNDim(); i++) {
             if (!(min.getCoord(i) <= r2.min.getCoord(i) &&
                     max.getCoord(i) >= r2.max.getCoord(i))) {
@@ -117,9 +154,13 @@ public class RectNd implements HyperRect {
         return true;
     }
 
-    @Override
-    public boolean intersects(HyperRect r) {
-        RectNd r2 = (RectNd) r;
+    /**
+     * Determines if this HyperRect intersects parameter HyperRect on any axis
+     *
+     * @param r2 - HyperRect to test
+     * @return true if intersects, false otherwise
+     */
+    public boolean intersects(RectNd r2) {
         for (int i = 0; i < min.getNDim(); i++) {
             if (min.getCoord(i) > r2.max.getCoord(i) ||
                     r2.min.getCoord(i) > max.getCoord(i)) {
@@ -129,7 +170,11 @@ public class RectNd implements HyperRect {
         return true;
     }
 
-    @Override
+    /**
+     * Calculate the "cost" of this HyperRect - usually the area across all dimensions
+     *
+     * @return - cost
+     */
     public double cost() {
         double res = 1;
         for (int i = 0; i < min.getNDim(); i++) {
@@ -138,7 +183,11 @@ public class RectNd implements HyperRect {
         return Math.abs(res);
     }
 
-    @Override
+    /**
+     * Calculate the perimeter of this HyperRect - across all dimesnions
+     *
+     * @return - perimeter
+     */
     public double perimeter() {
         double n = Math.pow(2, getNDim());
         double p = 0.0;
@@ -154,13 +203,12 @@ public class RectNd implements HyperRect {
         public Builder() {
         }
 
-        @Override
-        public HyperRect getBBox(RectNd rectNd) {
+        public RectNd getBBox(RectNd rectNd) {
             return rectNd;
         }
 
         @Override
-        public HyperRect getMbr(HyperPoint p1, HyperPoint p2) {
+        public RectNd getMbr(PointNd p1, PointNd p2) {
             double[] minXs = new double[p1.getNDim()];
             double[] maxXs = new double[p1.getNDim()];
 

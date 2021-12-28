@@ -43,7 +43,7 @@ final class CounterNode implements Node {
     }
 
     @Override
-    public HyperRect getBound() {
+    public RectNd getBound() {
         return node.getBound();
     }
 
@@ -63,7 +63,7 @@ final class CounterNode implements Node {
     }
 
     @Override
-    public int search(HyperRect rect, RectNd[] t, int n) {
+    public int search(RectNd rect, RectNd[] t, int n) {
         searchCount++;
         bboxEvalCount += node.size();
         return node.search(rect, t, n);
@@ -85,22 +85,22 @@ final class CounterNode implements Node {
     }
 
     @Override
-    public void search(HyperRect rect, Consumer consumer) {
+    public void search(RectNd rect, Consumer consumer) {
         node.search(rect, consumer);
     }
 
     @Override
-    public int intersects(HyperRect rect, RectNd[] t, int n) {
+    public int intersects(RectNd rect, RectNd[] t, int n) {
         return node.intersects(rect, t, n);
     }
 
     @Override
-    public void intersects(HyperRect rect, Consumer consumer) {
+    public void intersects(RectNd rect, Consumer consumer) {
         node.intersects(rect, consumer);
     }
 
     @Override
-    public boolean contains(HyperRect rect, RectNd t) {
+    public boolean contains(RectNd rect, RectNd t) {
         return node.contains(rect, t);
     }
 

@@ -12,6 +12,7 @@ import java.util.Deque;
 
 /**
  * rtree遍历器
+ *
  * @author liuyu
  * @date 2020/11/25
  */
@@ -39,17 +40,18 @@ public class RtreeTraverser {
     @FunctionalInterface
     public interface ObjNodeVisitor {
         /**
-         * @param objNode     访问到的node
+         * @param objNode 访问到的node
          */
         void vist(Node objNode);
     }
 
     /**
      * 遍历rtree
-     * @param tx tx
-     * @param rTreeIndex index
+     *
+     * @param tx               tx
+     * @param rTreeIndex       index
      * @param rtreeNodeVisitor 索引节点访问器，决定哪些节点符合条件
-     * @param objNodeVisitor 结果节点访问器
+     * @param objNodeVisitor   结果节点访问器
      */
     public static void traverse(Transaction tx, RTreeIndex rTreeIndex, IndexNodeVisitor rtreeNodeVisitor, ObjNodeVisitor objNodeVisitor) {
         Node rtreeNode = rTreeIndex.getIndexRoot(tx);

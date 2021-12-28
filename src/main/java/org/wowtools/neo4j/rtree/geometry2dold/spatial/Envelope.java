@@ -23,6 +23,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * Copy constructor
+     *
      * @param e env
      */
     public Envelope(org.neo4j.gis.spatial.index.Envelope e) {
@@ -31,6 +32,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * General constructor for the n-dimensional case
+     *
      * @param min min
      * @param max max
      */
@@ -40,6 +42,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * General constructor for the n-dimensional case starting with a single point
+     *
      * @param p p
      */
     public Envelope(double[] p) {
@@ -48,6 +51,7 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
 
     /**
      * Special constructor for the 2D case
+     *
      * @param xmin ...
      * @param xmax ...
      * @param ymin ...
@@ -58,8 +62,9 @@ public class Envelope extends org.neo4j.gis.spatial.index.Envelope {
     }
 
     /**
-     *      * Note that this doesn't exclude the envelope boundary.
-     *      * See JTS Envelope.
+     * * Note that this doesn't exclude the envelope boundary.
+     * * See JTS Envelope.
+     *
      * @param other ...
      * @return ...
      */

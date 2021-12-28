@@ -20,6 +20,7 @@ package org.wowtools.neo4j.rtree.internal.edit;
  * #L%
  */
 
+import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.TxCell;
 
@@ -52,7 +53,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
     protected Node split(final RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        HyperRect[] r = cacheNode.getR();
+        RectNd[] r = cacheNode.getR();
         RectNd mbr = cacheNode.getMbr();
 
         final NodeOfBranch pNode = new NodeOfBranch(builder, mMin, mMax, txCell);
@@ -75,15 +76,15 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
         final int splitDimension = axis;
 
         // sort along split dimension
-        final HyperRect[] sortedMbr = Arrays.copyOf(r, r.length);
+        final RectNd[] sortedMbr = Arrays.copyOf(r, r.length);
 
-        Arrays.sort(sortedMbr, new Comparator<HyperRect>() {
+        Arrays.sort(sortedMbr, new Comparator<RectNd>() {
             @Override
-            public int compare(final HyperRect o1, final HyperRect o2) {
-                final HyperPoint p1 = o1.getCentroid();
-                final HyperPoint p2 = o2.getCentroid();
+            public int compare(final RectNd o1, final RectNd o2) {
+                final PointNd p1 = o1.getCentroid();
+                final PointNd p2 = o2.getCentroid();
 
-                return p1.getCoord(splitDimension).compareTo(p2.getCoord(splitDimension));
+                return Double.compare(p1.getCoord(splitDimension), p2.getCoord(splitDimension));
             }
         });
 

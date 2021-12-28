@@ -20,8 +20,8 @@ package org.wowtools.neo4j.rtree.internal.edit;
  * #L%
  */
 
-import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.function.Consumer;
@@ -87,7 +87,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public HyperRect getBound() {
+    public RectNd getBound() {
         return cacheNode.getMbr();
     }
 
@@ -99,14 +99,14 @@ public final class NodeOfBranch implements Node {
      */
     @Override
     public Node add(final RectNd t) {
-        final HyperRect tRect = builder.getBBox(t);
+        final RectNd tRect = builder.getBBox(t);
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         if (size < mMin) {
             for (int i = 0; i < size; i++) {
                 if (child[i].getBound().contains(tRect)) {
                     cacheNode.setChildAtI(i, child[i].add(t));
-                    cacheNode.setMbr((RectNd) child[i].getBound());
+                    cacheNode.setMbr(child[i].getBound());
                     return this;
                 }
             }
@@ -114,18 +114,18 @@ public final class NodeOfBranch implements Node {
             final Node nextLeaf = NodeOfLeaf.create(builder, mMin, mMax, txCell);
             nextLeaf.add(t);
             final int nextChild = addChild(nextLeaf);
-            cacheNode.setMbr((RectNd) child[nextChild].getBound());
+            cacheNode.setMbr(child[nextChild].getBound());
 
             return this;
 
         } else {
             final int bestLeaf = chooseLeaf(t, tRect);
 
-            cacheNode.setChildAtI(bestLeaf,child[bestLeaf].add(t));
+            cacheNode.setChildAtI(bestLeaf, child[bestLeaf].add(t));
 
             RectNd mbr = cacheNode.getMbr();
-            HyperRect r = child[bestLeaf].getBound();
-            mbr = (RectNd) mbr.getMbr(r);
+            RectNd r = child[bestLeaf].getBound();
+            mbr = mbr.getMbr(r);
             cacheNode.setMbr(mbr);
 
             return this;
@@ -134,7 +134,7 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public Node remove(final RectNd t) {
-        final HyperRect tRect = builder.getBBox(t);
+        final RectNd tRect = builder.getBBox(t);
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
@@ -164,7 +164,7 @@ public final class NodeOfBranch implements Node {
             return child[0];
         }
 
-        HyperRect mbr = child[0].getBound();
+        RectNd mbr = child[0].getBound();
         for (int i = 1; i < size; i++) {
             mbr = mbr.getMbr(child[i].getBound());
         }
@@ -175,14 +175,14 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public Node update(final RectNd told, final RectNd tnew) {
-        final HyperRect tRect = builder.getBBox(told);
+        final RectNd tRect = builder.getBBox(told);
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (tRect.intersects(child[i].getBound())) {
                 cacheNode.setChildAtI(i, child[i].update(told, tnew));
             }
-            HyperRect mbr = cacheNode.getMbr();
+            RectNd mbr = cacheNode.getMbr();
             if (i == 0) {
                 mbr = child[i].getBound();
                 cacheNode.setMbr((RectNd) mbr);
@@ -195,7 +195,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public void search(HyperRect rect, Consumer consumer) {
+    public void search(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
@@ -206,7 +206,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public int search(final HyperRect rect, final RectNd[] t, int n) {
+    public int search(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
         int size = (int) cacheNode.getProperty("size");
@@ -220,7 +220,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public void intersects(HyperRect rect, Consumer consumer) {
+    public void intersects(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
@@ -231,7 +231,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public int intersects(final HyperRect rect, final RectNd[] t, int n) {
+    public int intersects(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
         int size = (int) cacheNode.getProperty("size");
@@ -264,12 +264,12 @@ public final class NodeOfBranch implements Node {
         return s;
     }
 
-    private int chooseLeaf(final RectNd t, final HyperRect tRect) {
+    private int chooseLeaf(final RectNd t, final RectNd tRect) {
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         if (size > 0) {
             int bestNode = 0;
-            HyperRect childMbr = child[0].getBound().getMbr(tRect);
+            RectNd childMbr = child[0].getBound().getMbr(tRect);
             double leastEnlargement = childMbr.cost() - (child[0].getBound().cost() + tRect.cost());
             double leastPerimeter = childMbr.perimeter();
 
@@ -298,7 +298,7 @@ public final class NodeOfBranch implements Node {
             size = size + 1;
             cacheNode.setProperty("size", size);
 
-            HyperRect mbr = cacheNode.getMbr();
+            RectNd mbr = cacheNode.getMbr();
             if (mbr == null) {
                 mbr = n.getBound();
             } else {
@@ -329,7 +329,7 @@ public final class NodeOfBranch implements Node {
     }
 
     @Override
-    public boolean contains(HyperRect rect, RectNd t) {
+    public boolean contains(RectNd rect, RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
