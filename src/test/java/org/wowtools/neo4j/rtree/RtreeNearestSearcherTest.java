@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.geometry2dold.Neo4jDbManager;
-import org.wowtools.neo4j.rtree.internal.nearest.DistanceResult;
+import org.wowtools.neo4j.rtree.util.DistanceResult;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.NearestNeighbour;
@@ -21,7 +21,7 @@ public class RtreeNearestSearcherTest {
     private static final String indexName = "testIndex";
     private static final Random r = new Random(233);
 
-    private static final double x = 0.5,y=0.5;
+    private static final double x = 0.5, y = 0.5;
 
     private static final int hitNum = 10;
 
@@ -44,15 +44,16 @@ public class RtreeNearestSearcherTest {
         RectNd[] distNds = rectNds.clone();
         Arrays.sort(distNds, Comparator.comparingDouble(RtreeNearestSearcherTest::dist));
         System.out.println("search");
-        PointNd pt = new PointNd(new double[]{x,y});
+        PointNd pt = new PointNd(new double[]{x, y});
         List<DistanceResult> nearests;
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()){
+        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
             RtreeNearestSearcher searcher = RtreeNearestSearcher.get(tx, indexName);
-            NearestNeighbour nearestNeighbour = new NearestNeighbour(hitNum,pt) {
+            NearestNeighbour nearestNeighbour = new NearestNeighbour(hitNum, pt) {
                 @Override
-                public double distance2DataNode(PointNd pointNd, long dataNodeId) {
+                public DistanceResult createDistanceResult(PointNd pointNd, long dataNodeId) {
                     RectNd rectNd = rectNds[(int) dataNodeId];
-                    return dist(rectNd);
+                    double dist = dist(rectNd);
+                    return new DistanceResult(dist, dataNodeId);
                 }
             };
             nearests = searcher.nearest(nearestNeighbour, tx);
@@ -62,7 +63,7 @@ public class RtreeNearestSearcherTest {
         }
     }
 
-    private static final double dist(RectNd rect2d){
+    private static final double dist(RectNd rect2d) {
         double[] xy = rect2d.getMaxXs();
         double x1 = xy[0];
         double y1 = xy[1];

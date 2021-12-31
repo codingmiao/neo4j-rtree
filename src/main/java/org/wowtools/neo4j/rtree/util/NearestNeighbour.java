@@ -10,7 +10,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
-import org.wowtools.neo4j.rtree.internal.nearest.DistanceResult;
 import org.wowtools.neo4j.rtree.internal.nearest.MinDist;
 import org.wowtools.neo4j.rtree.internal.nearest.MinDistComparator;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
@@ -20,13 +19,13 @@ import java.util.*;
 /**
  * 最邻近搜索查询条件，计算距离目标点最近的几个点
  */
-public abstract class NearestNeighbour {
+public abstract class NearestNeighbour<T extends DistanceResult> {
 
     private final DistanceResultNodeFilter filter;
     private final int maxHits;
     private final PointNd pointNd;
 
-    private static final DistanceResultNodeFilter alwaysTrue = dr -> true;
+    public static final DistanceResultNodeFilter alwaysTrue = dr -> true;
 
 
     /**
@@ -51,18 +50,19 @@ public abstract class NearestNeighbour {
     }
 
     /**
-     * 计算NearestNeighbour输入的pointNd到dataNode的距离
+     * 新建一个DistanceResult对象
      *
-     * @param pointNd
+     * @param pointNd    查询的点
+     * @param dataNodeId dataNodeId
      * @return
      */
-    public abstract double distance2DataNode(PointNd pointNd, long dataNodeId);
+    public abstract T createDistanceResult(PointNd pointNd, long dataNodeId);
 
     /**
      * @return the nearest neighbour
      */
-    public List<DistanceResult> find(Node root) {
-        List<DistanceResult> ret =
+    public List<T> find(Node root) {
+        List<T> ret =
                 new ArrayList<>(maxHits);
         MinDistComparator nc =
                 new MinDistComparator(pointNd);
@@ -89,7 +89,7 @@ public abstract class NearestNeighbour {
      * @param queue
      */
     private void nnExpandInternal(Node node,
-                                  List<DistanceResult> drs,
+                                  List<T> drs,
                                   int maxHits,
                                   PriorityQueue<Node> queue) {
 
@@ -118,7 +118,7 @@ public abstract class NearestNeighbour {
     private void nnExpandLeaf(
             Node node,
             DistanceResultNodeFilter filter,
-            List<DistanceResult> drs,
+            List<T> drs,
             int maxHits) {
         int size = (int) node.getProperty("size");
         String[] keys = new String[size];
@@ -128,8 +128,8 @@ public abstract class NearestNeighbour {
         Map<String, Object> properties = node.getProperties(keys);
         properties.forEach((k, v) -> {
             long dataNodeId = (long) v;
-            double dist = distance2DataNode(pointNd, dataNodeId);
-            DistanceResult dr = new DistanceResult(dist, dataNodeId);
+            T dr = createDistanceResult(pointNd, dataNodeId);
+            double dist = dr.getDist();
             if (filter.accept(dr)) {
                 int n = drs.size();
                 if (n < maxHits || dist < drs.get(n - 1).getDist()) {
@@ -140,8 +140,8 @@ public abstract class NearestNeighbour {
 
     }
 
-    private void add(List<DistanceResult> drs,
-                     DistanceResult dr,
+    private void add(List<T> drs,
+                     T dr,
                      int maxHits) {
         int n = drs.size();
         if (n == maxHits)

@@ -221,6 +221,10 @@ public final class RTree implements SpatialSearch {
     }
 
 
+    public long getMetadataNodeId() {
+        return metadataNodeId;
+    }
+
     /**
      * Different methods for splitting nodes in an RTree.
      * <p>

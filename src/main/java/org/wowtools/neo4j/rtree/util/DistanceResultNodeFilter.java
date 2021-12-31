@@ -1,7 +1,5 @@
 package org.wowtools.neo4j.rtree.util;
 
-import org.wowtools.neo4j.rtree.internal.nearest.DistanceResult;
-
 
 /**
  * 距离查询的node节点过滤器

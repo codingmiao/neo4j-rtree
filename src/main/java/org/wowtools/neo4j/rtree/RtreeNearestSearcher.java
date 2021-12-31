@@ -6,7 +6,7 @@ import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.internal.RtreeLock;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
-import org.wowtools.neo4j.rtree.internal.nearest.DistanceResult;
+import org.wowtools.neo4j.rtree.util.DistanceResult;
 import org.wowtools.neo4j.rtree.util.NearestNeighbour;
 
 import java.util.Iterator;
@@ -19,7 +19,7 @@ import java.util.concurrent.locks.Lock;
  * @author liuyu
  * @date 2021/12/27
  */
-public class RtreeNearestSearcher {
+public class RtreeNearestSearcher<T extends DistanceResult> {
 
     private final long metadataNodeId;
     private final Lock readLock;
@@ -38,7 +38,7 @@ public class RtreeNearestSearcher {
      * @param name 索引名
      * @return
      */
-    public static RtreeNearestSearcher get(Transaction tx, String name) {
+    public static  RtreeNearestSearcher get(Transaction tx, String name) {
         Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
         if (null == metadataNode) {
             throw new RuntimeException("索引 " + name + " 不存在");
@@ -57,7 +57,7 @@ public class RtreeNearestSearcher {
      * @param tx               事务 此事务需要在外部手动关闭
      * @return
      */
-    public List<DistanceResult> nearest(NearestNeighbour nearestNeighbour, Transaction tx) {
+    public List<T> nearest(NearestNeighbour<T> nearestNeighbour, Transaction tx) {
         readLock.lock();
         try {
             Node metadataNode = tx.getNodeById(metadataNodeId);
@@ -66,7 +66,7 @@ public class RtreeNearestSearcher {
                 return List.of();
             }
             Node root = iterator.next().getEndNode();
-            List<DistanceResult> res = nearestNeighbour.find(root);
+            List<T> res = nearestNeighbour.find(root);
             return res;
         } finally {
             readLock.unlock();

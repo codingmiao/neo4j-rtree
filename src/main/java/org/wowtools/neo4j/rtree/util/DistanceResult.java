@@ -1,4 +1,4 @@
-package org.wowtools.neo4j.rtree.internal.nearest;
+package org.wowtools.neo4j.rtree.util;
 
 
 /**

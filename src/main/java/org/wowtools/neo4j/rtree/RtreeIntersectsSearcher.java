@@ -109,4 +109,7 @@ public class RtreeIntersectsSearcher {
 
     }
 
+    public long getMetadataNodeId() {
+        return metadataNodeId;
+    }
 }

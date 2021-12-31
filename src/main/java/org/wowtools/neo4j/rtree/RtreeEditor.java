@@ -15,6 +15,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * rtree编辑器，此对象实例化时，会启动一个事务，并在索引上加写锁，所以务必在结束时调用close方法
+ * 此对象非线程安全
  *
  * @author liuyu
  * @date 2021/12/24
@@ -222,5 +223,13 @@ public class RtreeEditor implements AutoCloseable {
     public void close() {
         txCell.commit();
         writeLock.unlock();
+    }
+
+    public RTree getrTree() {
+        return rTree;
+    }
+
+    public TxCell getTxCell() {
+        return txCell;
     }
 }
