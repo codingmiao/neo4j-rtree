@@ -31,7 +31,6 @@ public class CacheNode {
     private final HashSet<String> changedKey = new HashSet<>();//标记哪些属性发生过变化，commit时统一node.setProperty
     private RectNd mbr;
     private org.wowtools.neo4j.rtree.internal.edit.Node[] children;
-    private RectNd[] r;
     private RectNd[] entry;
 
     public final NodeType nodeType;
@@ -63,7 +62,6 @@ public class CacheNode {
         changedKey.clear();
         mbr = null;
         children = null;
-        r = null;
         entry = null;
     }
 
@@ -198,34 +196,7 @@ public class CacheNode {
         }
     }
 
-    public RectNd[] getR() {
-        if (null == r) {
-            int mMax = (int) getProperty("mMax");
-            r = new RectNd[mMax];
-            for (int i = 0; i < mMax; i++) {
-                double[] rMinI = (double[]) getProperty("rMin" + i);
-                if (null == rMinI) {
-                    continue;
-                }
-                double[] rMaxI = (double[]) getProperty("rMax" + i);
-                r[i] = new RectNd(new PointNd(rMinI), new PointNd(rMaxI));
-            }
-        }
-        return r;
-    }
 
-    public void setRAtI(int i, RectNd ri) {
-        r = getR();
-        if (null == ri) {
-            setProperty("rMin" + i, null);
-            setProperty("rMax" + i, null);
-        } else {
-            setProperty("rMin" + i, ri.getMinXs());
-            setProperty("rMax" + i, ri.getMaxXs());
-        }
-        r[i] = ri;
-
-    }
 
     public RectNd[] getEntry() {
         if (null == entry) {

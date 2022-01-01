@@ -79,7 +79,6 @@ abstract class NodeOfLeaf implements Node {
                 mbr = tRect;
             }
             cacheNode.setMbr((RectNd) mbr);
-            cacheNode.setRAtI(size, (RectNd) tRect);
             cacheNode.setEntryAtI(size, t);
             size = size + 1;
             cacheNode.setProperty("size", size);
@@ -109,20 +108,13 @@ abstract class NodeOfLeaf implements Node {
 
         if (i < j) {
             final int nRemoved = j - i;
-            RectNd[] r = cacheNode.getR();
             if (j < size) {
                 final int nRemaining = size - j;
-//                System.arraycopy(r, j, r, i, nRemaining);
-                for (int i1 = 0; i1 < nRemaining; i1++) {
-                    cacheNode.setRAtI(i + i1, (RectNd) r[j + i1]);
-                }
-//                System.arraycopy(entry, j, entry, i, nRemaining);
                 for (int i1 = 0; i1 < nRemaining; i1++) {
                     cacheNode.setEntryAtI(i + i1, entry[j + i1]);
                 }
 
                 for (int k = size - nRemoved; k < size; k++) {
-                    cacheNode.setRAtI(k, null);
                     cacheNode.setEntryAtI(k, null);
                 }
             } else {
@@ -131,7 +123,6 @@ abstract class NodeOfLeaf implements Node {
                     return null;
                 }
                 for (int k = i; k < size; k++) {
-                    cacheNode.setRAtI(k, null);
                     cacheNode.setEntryAtI(k, null);
                 }
             }
@@ -142,9 +133,9 @@ abstract class NodeOfLeaf implements Node {
             RectNd mbr = null;
             for (int k = 0; k < size; k++) {
                 if (k == 0) {
-                    mbr = r[k];
+                    mbr = entry[k];
                 } else {
-                    mbr = mbr.getMbr(r[k]);
+                    mbr = mbr.getMbr(entry[k]);
                 }
             }
             if (null != mbr) {
@@ -161,19 +152,16 @@ abstract class NodeOfLeaf implements Node {
     public Node update(final RectNd told, final RectNd tnew) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
-        final RectNd bbox = builder.getBBox(tnew);
 
         RectNd mbr = null;
         for (int i = 0; i < size; i++) {
             if (entry[i].equals(told)) {
-                cacheNode.setRAtI(i, (RectNd) bbox);
                 cacheNode.setEntryAtI(i, tnew);
             }
             if (i == 0) {
-                mbr = r[i];
+                mbr = entry[i];
             } else {
-                mbr = mbr.getMbr(r[i]);
+                mbr = mbr.getMbr(entry[i]);
             }
         }
         if (null != mbr) {
@@ -189,10 +177,9 @@ abstract class NodeOfLeaf implements Node {
         final int n0 = n;
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size && n < tLen; i++) {
-            if (rect.contains(r[i])) {
+            if (rect.contains(entry[i])) {
                 t[n++] = entry[i];
             }
         }
@@ -203,9 +190,8 @@ abstract class NodeOfLeaf implements Node {
     public void search(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
         for (int i = 0; i < size; i++) {
-            if (rect.contains(r[i])) {
+            if (rect.contains(entry[i])) {
                 consumer.accept(entry[i]);
             }
         }
@@ -218,10 +204,9 @@ abstract class NodeOfLeaf implements Node {
 
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size && n < tLen; i++) {
-            if (rect.intersects(r[i])) {
+            if (rect.intersects(entry[i])) {
                 t[n++] = entry[i];
             }
         }
@@ -232,10 +217,9 @@ abstract class NodeOfLeaf implements Node {
     public void intersects(RectNd rect, Consumer consumer) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size; i++) {
-            if (rect.intersects(r[i])) {
+            if (rect.intersects(entry[i])) {
                 consumer.accept(entry[i]);
             }
         }
@@ -288,10 +272,9 @@ abstract class NodeOfLeaf implements Node {
     public boolean contains(RectNd rect, RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
 
         for (int i = 0; i < size; i++) {
-            if (rect.contains(r[i])) {
+            if (rect.contains(entry[i])) {
                 if (entry[i].equals(t)) {
                     return true;
                 }

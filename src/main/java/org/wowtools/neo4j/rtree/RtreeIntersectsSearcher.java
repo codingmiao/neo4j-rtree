@@ -92,8 +92,8 @@ public class RtreeIntersectsSearcher {
                     Map<String, Object> properties = node.getAllProperties();
                     int size = (int) properties.get("size");
                     for (int i = 0; i < size; i++) {
-                        double[] rMin = (double[]) properties.get("rMin" + i);
-                        double[] rMax = (double[]) properties.get("rMax" + i);
+                        double[] rMin = (double[]) properties.get("entryMin" + i);
+                        double[] rMax = (double[]) properties.get("entryMax" + i);
                         RectNd dataMbr = new RectNd(rMin, rMax);
                         if (bbox.intersects(dataMbr)) {
                             if (visitor.visit((long) properties.get("entryDataId" + i))) {

@@ -53,13 +53,12 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
     protected Node split(final RectNd t) {
         int size = (int) cacheNode.getProperty("size");
         RectNd[] entry = cacheNode.getEntry();
-        RectNd[] r = cacheNode.getR();
         RectNd mbr = cacheNode.getMbr();
 
         final NodeOfBranch pNode = new NodeOfBranch(builder, mMin, mMax, txCell);
         final Node l1Node = create(builder, mMin, mMax, txCell);
         final Node l2Node = create(builder, mMin, mMax, txCell);
-        final int nD = r[0].getNDim();
+        final int nD = entry[0].getNDim();
 
         // choose axis to split
         int axis = 0;
@@ -76,7 +75,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
         final int splitDimension = axis;
 
         // sort along split dimension
-        final RectNd[] sortedMbr = Arrays.copyOf(r, r.length);
+        final RectNd[] sortedMbr = Arrays.copyOf(entry, entry.length);
 
         Arrays.sort(sortedMbr, new Comparator<RectNd>() {
             @Override
@@ -92,7 +91,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
         for (int i = 0; i < size / 2; i++) {
             outerLoop:
             for (int j = 0; j < size; j++) {
-                if (r[j] == sortedMbr[i]) {
+                if (entry[j] == sortedMbr[i]) {
                     l1Node.add(entry[j]);
                     break outerLoop;
                 }
@@ -102,7 +101,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
         for (int i = size / 2; i < size; i++) {
             outerLoop:
             for (int j = 0; j < size; j++) {
-                if (r[j] == sortedMbr[i]) {
+                if (entry[j] == sortedMbr[i]) {
                     l2Node.add(entry[j]);
                     break outerLoop;
                 }
