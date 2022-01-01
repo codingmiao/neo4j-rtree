@@ -1,13 +1,14 @@
 package org.wowtools.neo4j.rtree;
 
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.neo4j.graphdb.Transaction;
-import org.wowtools.neo4j.rtree.geometry2dold.Neo4jDbManager;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
@@ -17,7 +18,17 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class RtreeEditorTest {
+    private Neo4jDbManager neo4jDbManager;
 
+    @Before
+    public void before(){
+        neo4jDbManager = new Neo4jDbManager();
+    }
+
+    @After
+    public void after(){
+        neo4jDbManager.afterTest();
+    }
     @Test
     public void test() {
         //构造测试数据
@@ -64,13 +75,13 @@ public class RtreeEditorTest {
         }
 
         // add
-        try (RtreeEditor rtreeEditor = RtreeEditor.create(Neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8)) {
+        try (RtreeEditor rtreeEditor = RtreeEditor.create(neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8)) {
             for (int i = 0; i < num; i++) {
                 rtreeEditor.add(rectNds[i]);
             }
         }
         MyVisitor myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
             PointNd p0 = new PointNd(new double[]{x0, y0});
             PointNd p1 = new PointNd(new double[]{x1, y1});
@@ -83,14 +94,14 @@ public class RtreeEditorTest {
         // remove
         int removeNum = (int) (resNum * 0.4);//移除40%的数据
         resNum -= removeNum;
-        try (RtreeEditor rtreeEditor = RtreeEditor.get(Neo4jDbManager.getGraphDb(), 2000, indexName)) {
+        try (RtreeEditor rtreeEditor = RtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = 0; i < removeNum; i++) {
                 RectNd rn = intersectRectNds.get(i);
                 rtreeEditor.remove(rn);
             }
         }
         myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
             PointNd p0 = new PointNd(new double[]{x0, y0});
             PointNd p1 = new PointNd(new double[]{x1, y1});
@@ -102,7 +113,7 @@ public class RtreeEditorTest {
 
         // update
         int updateStart = removeNum + 1;
-        try (RtreeEditor rtreeEditor = RtreeEditor.get(Neo4jDbManager.getGraphDb(), 2000, indexName)) {
+        try (RtreeEditor rtreeEditor = RtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = updateStart; i < intersectRectNds.size(); i++) {
                 RectNd told = intersectRectNds.get(i);
                 double xmin = r.nextDouble();
@@ -128,7 +139,7 @@ public class RtreeEditorTest {
         }
 
         myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
             PointNd p0 = new PointNd(new double[]{x0, y0});
             PointNd p1 = new PointNd(new double[]{x1, y1});
@@ -140,12 +151,12 @@ public class RtreeEditorTest {
 
 
 //        drop
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
-            RtreeEditor.drop(Neo4jDbManager.getGraphDb(), indexName, (nodeId) -> {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
+            RtreeEditor.drop(neo4jDbManager.getGraphDb(), indexName, (nodeId) -> {
 //                tx.getNodeById(nodeId).delete();
             });
         }
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             tx.findNodes(Labels.METADATA).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
             tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
             tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});

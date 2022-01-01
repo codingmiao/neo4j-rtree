@@ -1,11 +1,15 @@
-package org.wowtools.neo4j.rtree.geometry2dold;
+package org.wowtools.neo4j.rtree;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.NeoBootstrapper;
 import org.wowtools.common.utils.ResourcesReader;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -18,12 +22,14 @@ import java.util.Properties;
  * @date 2018/11/14
  */
 public class Neo4jDbManager {
-    private static final CommunityBootstrapper serverBootstrapper;
-    private static final String dbPath;
-    private static final GraphDatabaseService graphDb;
+    private final NeoBootstrapper serverBootstrapper;
+    private final String dbPath;
+    private final GraphDatabaseService graphDb;
 
 
-    static {
+    private final FileLock lock;
+
+    {
 
         Properties p = new Properties();
         try {
@@ -34,7 +40,16 @@ public class Neo4jDbManager {
 
         dbPath = p.getProperty("dbms.directories.data");
 
+        try {
+            FileChannel channel = new FileOutputStream(dbPath + ".testlock", true).getChannel();
+            lock = channel.lock();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
         File storeDir = new File(dbPath);
+
         deleteFiles(storeDir);//删除现有文件夹
         serverBootstrapper = new CommunityBootstrapper();
         String cfgFilePath = ResourcesReader.getClassRootPath(Neo4jDbManager.class) +
@@ -51,7 +66,7 @@ public class Neo4jDbManager {
         graphDb = serverBootstrapper.getDatabaseManagementService().database("neo4j");
     }
 
-    private static void deleteFiles(File path) {
+    private void deleteFiles(File path) {
         if (null != path) {
             if (!path.exists())
                 return;
@@ -78,7 +93,7 @@ public class Neo4jDbManager {
      *
      * @return
      */
-    public static GraphDatabaseService getGraphDb() {
+    public GraphDatabaseService getGraphDb() {
         return graphDb;
     }
 
@@ -87,7 +102,18 @@ public class Neo4jDbManager {
      *
      * @return
      */
-    public static CommunityBootstrapper getServer() {
+    public NeoBootstrapper getServer() {
         return serverBootstrapper;
     }
+
+    public void afterTest() {
+        try {
+            lock.release();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        serverBootstrapper.stop();
+        System.out.println("test end");
+    }
+
 }

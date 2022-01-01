@@ -2,7 +2,6 @@ package org.wowtools.neo4j.rtree.geometry2d;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.wowtools.neo4j.rtree.geometry2dold.spatial.Envelope;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 
 /**
@@ -28,10 +27,6 @@ public class GeometryBbox {
 
         public double[] toDoubleArray() {
             return new double[]{xmin, ymin, xmax, ymax};
-        }
-
-        public Envelope toEnvelope() {
-            return new Envelope(xmin, xmax, ymin, ymax);
         }
 
         public RectNd toRect2d(){

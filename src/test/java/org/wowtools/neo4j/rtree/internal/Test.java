@@ -1,9 +1,11 @@
 package org.wowtools.neo4j.rtree.internal;
 
+import org.junit.After;
+import org.junit.Before;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
-import org.wowtools.neo4j.rtree.geometry2dold.Neo4jDbManager;
+import org.wowtools.neo4j.rtree.Neo4jDbManager;
 import org.wowtools.neo4j.rtree.internal.edit.RTree;
 import org.wowtools.neo4j.rtree.internal.edit.SpatialSearches;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
@@ -22,11 +24,24 @@ import java.util.function.Consumer;
  */
 public class Test {
 
-    public static void main(String[] args) {
+    private Neo4jDbManager neo4jDbManager;
+
+    @Before
+    public void before(){
+        neo4jDbManager = new Neo4jDbManager();
+    }
+
+    @After
+    public void after(){
+        neo4jDbManager.afterTest();
+    }
+
+    @org.junit.Test
+    public void test() {
         System.out.println("init");
         GeometryFactory gf = new GeometryFactory();
         RectNd.Builder b = new RectNd.Builder();
-        TxCell txCell = new TxCell(200, Neo4jDbManager.getGraphDb());
+        TxCell txCell = new TxCell(200, neo4jDbManager.getGraphDb());
         //构造测试数据
         double x0 = 0, x1 = 0.5, y0 = 0, y1 = 0.5;//查询范围
         int num = 32;//测试数据量 4

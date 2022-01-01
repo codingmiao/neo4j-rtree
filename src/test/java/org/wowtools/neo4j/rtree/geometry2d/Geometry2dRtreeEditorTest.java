@@ -1,7 +1,9 @@
 package org.wowtools.neo4j.rtree.geometry2d;
 
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -11,13 +13,25 @@ import org.locationtech.jts.io.WKBWriter;
 import org.locationtech.jts.io.WKTReader;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.wowtools.neo4j.rtree.geometry2dold.Neo4jDbManager;
+import org.wowtools.neo4j.rtree.Neo4jDbManager;
 import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Geometry2dRtreeEditorTest {
+    private Neo4jDbManager neo4jDbManager;
+
+    @Before
+    public void before(){
+        neo4jDbManager = new Neo4jDbManager();
+    }
+
+    @After
+    public void after(){
+        neo4jDbManager.afterTest();
+    }
+
     @Test
     public void test() throws Exception {
         System.out.println("start");
@@ -35,7 +49,7 @@ public class Geometry2dRtreeEditorTest {
         ArrayList<DataNodeCell> intersectDataNodeCells = new ArrayList<>();
         System.out.println("init success");
         // add
-        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.create(Neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8, geometryName)) {
+        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.create(neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8, geometryName)) {
             TxCell txCell = rtreeEditor.getTxCell();
             for (int i = 0; i < num; i++) {
                 double x = r.nextDouble();
@@ -55,7 +69,7 @@ public class Geometry2dRtreeEditorTest {
             }
         }
         MyVisitor myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             Geometry2dRtreeIntersectsSearcher searcher = Geometry2dRtreeIntersectsSearcher.get(tx, indexName);
             searcher.intersects(inputGeometry, tx, myVisitor);
         }
@@ -66,14 +80,14 @@ public class Geometry2dRtreeEditorTest {
         // remove
         int removeNum = (int) (resNum * 0.4);//移除40%的数据
         resNum -= removeNum;
-        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.get(Neo4jDbManager.getGraphDb(), 2000, indexName)) {
+        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = 0; i < removeNum; i++) {
                 DataNodeCell dataNodeCell = intersectDataNodeCells.get(i);
                 rtreeEditor.remove(dataNodeCell.dataNodeId, dataNodeCell.geometry);
             }
         }
         myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             Geometry2dRtreeIntersectsSearcher searcher = Geometry2dRtreeIntersectsSearcher.get(tx, indexName);
             searcher.intersects(inputGeometry, tx, myVisitor);
         }
@@ -83,7 +97,7 @@ public class Geometry2dRtreeEditorTest {
 
         // update
         int updateStart = removeNum + 1;
-        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.get(Neo4jDbManager.getGraphDb(), 2000, indexName)) {
+        try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             TxCell txCell = rtreeEditor.getTxCell();
             for (int i = updateStart; i < intersectDataNodeCells.size(); i++) {
                 DataNodeCell intersectDataNodeCell = intersectDataNodeCells.get(i);
@@ -109,7 +123,7 @@ public class Geometry2dRtreeEditorTest {
         }
 
         myVisitor = new MyVisitor();
-        try (Transaction tx = Neo4jDbManager.getGraphDb().beginTx()) {
+        try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             Geometry2dRtreeIntersectsSearcher searcher = Geometry2dRtreeIntersectsSearcher.get(tx, indexName);
             searcher.intersects(inputGeometry, tx, myVisitor);
         }
