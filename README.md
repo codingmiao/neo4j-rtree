@@ -2,6 +2,11 @@
 
 一个基于neo4j构建的n维度空间索引
 
+github: https://github.com/codingmiao/neo4j-rtree
+
+gitee: https://gitee.com/wowtools/neo4j-rtree
+
+
 [中文文档](README.md) | [README](README_en.md)
 
 ## 简介
