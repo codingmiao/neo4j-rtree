@@ -34,6 +34,8 @@ public class TxCell {
 
     private final Map<Long, CacheNode> cacheNodeMap = new HashMap<>();
 
+    private final Map<Long, Long> nodeParentMap = new HashMap<>();
+
     public CacheNode getNode(long nodeId) {
         CacheNode cacheNode = cacheNodeMap.get(nodeId);
         if (null != cacheNode) {
@@ -66,6 +68,10 @@ public class TxCell {
         CacheNode cacheNode = new CacheNode(node.getId(), this, nodeType);
         cacheNodeMap.put(node.getId(), cacheNode);
         return cacheNode;
+    }
+
+    public void setNodeParent(Long nodeId, Long parentNodeId) {
+        nodeParentMap.put(nodeId, parentNodeId);
     }
 
     public org.wowtools.neo4j.rtree.internal.edit.Node getNodeFromNeo4j(long nid) {
@@ -121,16 +127,43 @@ public class TxCell {
     }
 
     public void commit() {
+        //各cacheNode属性提交
         cacheNodeMap.forEach((nid, cacheNode) -> {
             cacheNode.commit();
         });
-        neoGc();
-        tx.commit();
+        //RTREE_PARENT_TO_CHILD关系变更
+        nodeParentMap.forEach((nid, parentNid) -> {
+            if (null == parentNid) {//parentNid为空，删除旧关系
+                for (Relationship relationship : tx.getNodeById(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                    relationship.delete();
+                }
+            } else {//parentNid非空，修改关系
+                boolean hasRelationship = false;//新的关系是否已存在
+                for (Relationship relationship : tx.getNodeById(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                    if (hasRelationship) {
+                        relationship.delete();
+                    } else {
+                        if (parentNid == relationship.getStartNodeId()) {
+                            hasRelationship = true;
+                        } else {
+                            relationship.delete();
+                        }
+                    }
+                }
+                if (null != parentNid && !hasRelationship) {
+                    tx.getNodeById(parentNid).createRelationshipTo(tx.getNodeById(nid), Relationships.RTREE_PARENT_TO_CHILD);
+                }
+            }
+        });
+        neoGc();//gc
+        tx.commit();//提交neo4j事务
+        //清理内存中的对象
         num = 0;
         cacheNodeMap.forEach((nid, cacheNode) -> {
             cacheNode.clearCache();
         });
         cacheNodeMap.clear();
+        nodeParentMap.clear();
     }
 
     /**

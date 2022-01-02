@@ -116,11 +116,8 @@ public class CacheNode {
     public void setProperty(String key, Object value) {
         changedKey.add(key);
         if (null == value) {
-//            _node().removeProperty(key);
-//            properties.remove(key);
             properties.put(key, empty);
         } else {
-//            _node().setProperty(key, value);
             properties.put(key, value);
         }
     }
@@ -135,8 +132,12 @@ public class CacheNode {
             int mMax = (int) getProperty("mMax");
             children = new org.wowtools.neo4j.rtree.internal.edit.Node[mMax];
             int i = 0;
+            HashSet<Long> added = new HashSet<>();
             for (Relationship relationship : _node().getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
                 children[i] = txCell.getNodeFromNeo4j(relationship.getEndNodeId());
+                if (!added.add(relationship.getEndNodeId())) {
+                    throw new RuntimeException();
+                }
                 i++;
             }
         }
@@ -147,19 +148,43 @@ public class CacheNode {
     public void setChildAtI(int i, org.wowtools.neo4j.rtree.internal.edit.Node node) {
         children = getChildren();
         org.wowtools.neo4j.rtree.internal.edit.Node old = children[i];
-        Transaction tx = txCell.getTx();
         if (null != old) {
             //切断旧node的引用
-            Node oldNode = tx.getNodeById(old.getNeoNodeId());
-            oldNode.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD).forEach((r) -> {
-                r.delete();
-            });
+            txCell.setNodeParent(old.getNeoNodeId(), null);
         }
         children[i] = node;
         if (null != node) {
             //建立新节点的引用
-            Node neoNode = tx.getNodeById(node.getNeoNodeId());
-            tx.getNodeById(nodeId).createRelationshipTo(neoNode, Relationships.RTREE_PARENT_TO_CHILD);
+            txCell.setNodeParent(node.getNeoNodeId(), nodeId);
+
+        }
+
+    }
+
+
+    /**
+     * 把i+1位置开始，所有child的位置上移一位
+     * 作用等同于System.arraycopy(child, i + 1, child, i, size - i - 1)
+     *
+     * @param i
+     */
+    public void childIndexUp(int i) {
+        int size = (int) getProperty("size");
+        children = getChildren();
+
+        int j = i;
+        int num = size - i - 1;
+        for (int i1 = 0; i1 < num; i1++) {
+//            setChildAtI(j, children[j + 1]);
+            children[j] = children[j + 1];
+            j++;
+        }
+        size--;
+        setProperty("size", size);
+        org.wowtools.neo4j.rtree.internal.edit.Node old = children[size];
+        if (null != old) {
+            txCell.setNodeParent(old.getNeoNodeId(), null);
+            children[size] = null;
         }
 
     }
@@ -180,22 +205,11 @@ public class CacheNode {
                 mbr = n.getBound();
             }
             setMbr((RectNd) mbr);
-
-//            //建立新节点的引用
-//            Transaction tx = txCell.getTx();
-//            Node neoNode = tx.getNodeById(n.getNeoNodeId());
-//
-//            neoNode.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD).forEach((r) -> {
-//                r.delete();
-//            });
-//            tx.getNodeById(nodeId).createRelationshipTo(neoNode, Relationships.RTREE_PARENT_TO_CHILD);
-
             return size - 1;
         } else {
             throw new RuntimeException("Too many children");
         }
     }
-
 
 
     public RectNd[] getEntry() {

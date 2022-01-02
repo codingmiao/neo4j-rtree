@@ -143,15 +143,8 @@ public final class NodeOfBranch implements Node {
                 if (child[i] == null) {
 //                    System.arraycopy(child, i + 1, child, i, size - i - 1);
                     //把所有child的位置上移一位
-                    int j = i;
-                    int num = size - i - 1;
-                    for (int i1 = 0; i1 < num; i1++) {
-                        cacheNode.setChildAtI(j, child[j + 1]);
-                        j++;
-                    }
-                    size--;
-                    cacheNode.setChildAtI(size, null);
-
+                    cacheNode.childIndexUp(i);
+                    size = (int) cacheNode.getProperty("size");
                     if (size > 0) i--;
                 }
             }
@@ -185,10 +178,10 @@ public final class NodeOfBranch implements Node {
             RectNd mbr = cacheNode.getMbr();
             if (i == 0) {
                 mbr = child[i].getBound();
-                cacheNode.setMbr((RectNd) mbr);
+                cacheNode.setMbr( mbr);
             } else {
                 mbr = mbr.getMbr(child[i].getBound());
-                cacheNode.setMbr((RectNd) mbr);
+                cacheNode.setMbr( mbr);
             }
         }
         return this;

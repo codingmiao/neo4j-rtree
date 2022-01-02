@@ -21,14 +21,15 @@ public class RtreeEditorTest {
     private Neo4jDbManager neo4jDbManager;
 
     @Before
-    public void before(){
+    public void before() {
         neo4jDbManager = new Neo4jDbManager();
     }
 
     @After
-    public void after(){
+    public void after() {
         neo4jDbManager.afterTest();
     }
+
     @Test
     public void test() {
         //构造测试数据
@@ -75,11 +76,13 @@ public class RtreeEditorTest {
         }
 
         // add
+        long t = System.currentTimeMillis();
         try (RtreeEditor rtreeEditor = RtreeEditor.create(neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8)) {
             for (int i = 0; i < num; i++) {
                 rtreeEditor.add(rectNds[i]);
             }
         }
+        long t1 = System.currentTimeMillis() - t;
         MyVisitor myVisitor = new MyVisitor();
         try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
@@ -87,19 +90,21 @@ public class RtreeEditorTest {
             PointNd p1 = new PointNd(new double[]{x1, y1});
             searcher.intersects(new RectNd(p0, p1), tx, myVisitor);
         }
-        System.out.println("add " + myVisitor.num);
+        System.out.println("add " + myVisitor.num + ",cost " + t1);
         Assert.assertEquals(resNum, myVisitor.num);
         // end add
 
         // remove
         int removeNum = (int) (resNum * 0.4);//移除40%的数据
         resNum -= removeNum;
+        t = System.currentTimeMillis();
         try (RtreeEditor rtreeEditor = RtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = 0; i < removeNum; i++) {
                 RectNd rn = intersectRectNds.get(i);
                 rtreeEditor.remove(rn);
             }
         }
+        t1 = System.currentTimeMillis() - t;
         myVisitor = new MyVisitor();
         try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
@@ -107,12 +112,13 @@ public class RtreeEditorTest {
             PointNd p1 = new PointNd(new double[]{x1, y1});
             searcher.intersects(new RectNd(p0, p1), tx, myVisitor);
         }
-        System.out.println("remove " + myVisitor.num);
+        System.out.println("remove " + myVisitor.num + ",cost " + t1);
         Assert.assertEquals(resNum, myVisitor.num);
         // end remove
 
         // update
         int updateStart = removeNum + 1;
+        t = System.currentTimeMillis();
         try (RtreeEditor rtreeEditor = RtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = updateStart; i < intersectRectNds.size(); i++) {
                 RectNd told = intersectRectNds.get(i);
@@ -137,7 +143,7 @@ public class RtreeEditorTest {
                 rtreeEditor.update(told, rect2d);
             }
         }
-
+        t1 = System.currentTimeMillis() - t;
         myVisitor = new MyVisitor();
         try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
@@ -145,7 +151,7 @@ public class RtreeEditorTest {
             PointNd p1 = new PointNd(new double[]{x1, y1});
             searcher.intersects(new RectNd(p0, p1), tx, myVisitor);
         }
-        System.out.println("update " + myVisitor.num);
+        System.out.println("update " + myVisitor.num+ ",cost " + t1);
         Assert.assertEquals(resNum, myVisitor.num);
         // end update
 
@@ -157,9 +163,15 @@ public class RtreeEditorTest {
             });
         }
         try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
-            tx.findNodes(Labels.METADATA).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
-            tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
-            tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {throw new RuntimeException("drop未清理干净");});
+            tx.findNodes(Labels.METADATA).forEachRemaining(node -> {
+                throw new RuntimeException("drop未清理干净");
+            });
+            tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {
+                throw new RuntimeException("drop未清理干净");
+            });
+            tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {
+                throw new RuntimeException("drop未清理干净");
+            });
         }
 //        drop end
 
