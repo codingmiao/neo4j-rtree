@@ -1,84 +1,103 @@
 # neo4j-rtree
-a spatial index for neo4j 4.x.
 
-[README](README.md) | [中文文档](README_zh.md)
+一个基于neo4j构建的n维度空间索引
 
-## What can it do
+[中文文档](README.md) | [README](README_en.md)
 
-### create a spatial index
+## 简介
+
+rtree，是一个计算n维空间内对象的位置关系、距离关系的索引。 很多前辈开源了各类rtree的在内存中的实现，但是，在大数据量的场景下，完全构建在内存中的rtree存在内存占用高，初始化时间长等问题。
+因此，本项目参考[conversant/rtree](https://github.com/conversant/rtree) 的实现思路，将rtree构建在图数据库 [neo4j](https://github.com/neo4j/neo4j)
+中， 形成了一个内存可控、可持久化的rtree索引项目。
+
+(注意: 旧版本 [v1.x](https://github.com/codingmiao/neo4j-rtree/tree/v1.x)
+版本基于 [neo4j spatial](https://github.com/neo4j-contrib/spatial) 构建，存在递归过多容易栈内存溢出、只能用于2维空间等问题，已不再进行功能性更新)
+
+## 使用示例
+
+### 索引数据的的增删改
+
 ~~~java
-//5个参数依次是:  neo4j的GraphDatabaseService实例    索引名(唯一) 空间属性名   rtree最大子节点数 最大缓存geometry对象数
-RTreeIndex rTreeIndex = RTreeIndexManager.createIndex(db, "index1", "geometry", 64, 1024);
+    try(RtreeEditor rtreeEditor=RtreeEditor.create(db,2000,indexName)){
+        //构建一个RectNd对象，描述n维对象的最小外接矩形
+        RectNd rect2d = new RectNd(new PointNd(new double[]{xmin, ymin}), new PointNd(new double[]{xmax, ymax}));
+        //add
+        rtreeEditor.add(rect2d);
+        //remove、update方法类似
+    }
 ~~~
 
+完整示例请参见 [测试用例](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/RtreeEditorTest.java)
 
-### add node(s) to spatial index
+
+### 相交关系查询
+查询索引中的对象是否与输入的n维矩形相交
 ~~~java
-Transaction tx = db.beginTx();
-Node node = tx.createNode(testLabel);//create node
-Point geo = wkbReader.read("POINT(10 20)");
-byte[] wkb = wkbWriter.write(geo);//to wkb
-node.setProperty("geometry", wkb);//set the property of the spatial field
-rTreeIndex.add(node,tx);//add to spatial index(if you have many vertices, add as list for efficiency)
-
-~~~
-
-### spatial query
-~~~java
-//Enter a rectangle and query the node covered by the rectangle
-double[] bbox = new double[]{3, 1, 8, 9};
+//构造输入矩形
+PointNd p0 = new PointNd(new double[]{x0, y0});
+PointNd p1 = new PointNd(new double[]{x1, y1});
+RectNd inputRange = new RectNd(p0, p1);
 try (Transaction tx = db.beginTx()) {
-    RtreeQuery.queryByBbox(tx, rTreeIndex, bbox, (node, geometry) -> {
-        System.out.println(node.getProperty("xxxx"));
+    //构建一个RtreeIntersectsSearcher对象
+    RtreeIntersectsSearcher searcher = RtreeIntersectsSearcher.get(tx, indexName);
+    searcher.intersects(inputRange, tx, (dataNodeId)->{
+        //打印查询到的nodeId，也可以拿着id在neo4j中查询node更详细的信息
+        System.out.println(dataNodeId);
+        return false;
     });
 }
 ~~~
+完整示例请参见 [测试用例](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/RtreeEditorTest.java)
+
+
+
+### 最邻近搜索
 
 ~~~java
-//Input an geometry, query the node covered by the geometry
-//对于狭长的geometry，使用queryByStripGeometryIntersects方法有更高的性能
-Geometry inputGeo = new WKTReader().read("POLYGON ((11 24, 22 28, 29 15, 11 24))");
-try (Transaction tx = db.beginTx()) {
-    RtreeQuery.queryByGeometryIntersects(tx, rTreeIndex, inputGeo, (node, geometry) -> {
-        System.out.println(node.getProperty("xxxx"));
-    });
-}
-~~~
+    //求距离点(x,y)距离最近的5个点点
+    double x = 0.5, y = 0.5;
+    int hitNum = 5；
+    try (Transaction tx = db.beginTx()) {
+        //构建一个RtreeNearestSearcher对象
+        RtreeNearestSearcher searcher = RtreeNearestSearcher.get(tx, indexName);
+        //构建查询条件NearestNeighbour，包括点PointNd、最大返回条数、距离计算公式
+        PointNd pt = new PointNd(new double[]{x, y});
+        NearestNeighbour nearestNeighbour = new NearestNeighbour(hitNum, pt) {
+            @Override
+            public DistanceResult createDistanceResult(PointNd pointNd, long dataNodeId) {
+                RectNd rectNd = ...;//根据dataNodeId从neo4j中查询dataNode的
+                double dist = dist(rectNd);//计算dataNode到(x,y)的距离
+                return new DistanceResult(dist, dataNodeId);
+            }
+        };
+        nearests = searcher.nearest(nearestNeighbour, tx);
+    }
+    ...
+    //定义距离公式
+    private static final double dist(RectNd rect2d) {
+        double[] xy = rect2d.getMaxXs();
+        double x1 = xy[0];
+        double y1 = xy[1];
+        return Math.sqrt(Math.pow(x1 - x, 2) + Math.pow(y1 - y, 2));
+    }
 
-### nearest neighbor search
-~~~java
-//Query the 5 nodes closest to point (10.2, 13.2)
-try (Transaction tx = db.beginTx()) {
-    List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> true);
-    System.out.println(res);
-}
+~~~
+完整示例请参见 [测试用例](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/RtreeNearestSearcherTest.java)
 
-~~~
-~~~java
-//Query the 5 nodes closest to point (10.2, 13.2) with filter
-try (Transaction tx = db.beginTx()) {
-    List<DistanceResult> res = RtreeNearestQuery.queryNearestN(tx, rTreeIndex, 10.2, 13.2, 5, (node, geometry) -> geometry.getCoordinate().x<10);
-    System.out.println(res);//DistanceResult里包含了node、距离以及geometry，详见测试用例
-}
-~~~
-### Faster spatial analysis of big geometry
-As for very fine geometry, because it contains too many points, the performance of spatial relationship calculation by using JTS's ``intersects`` function directly will be poor. At this point, it can be considered to use the Tool BigShapeManager to cut it open and establish index before analysis:
-~~~java
-String wkt = "...";//一个很多点构成的多边形
-Geometry geometry = wktReader.read(wkt);
-String indexId = "123";//声明一个id来构建索引，注意id唯一性
-BigShapeManager.build(graphDb, indexId, geometry, 10, 10);//切割多边形为10行10列并构建索引
-BigShape bigShape = BigShapeManager.get(graphDb, indexId);//获取到BigShape对象
-Geometry s1 = new WKTReader().read("POINT (866.8184900283813 132.99309968948364)");
-System.out.println(bigShape.intersects(tx, s1));//利用BigShape来做空间关系计算
-~~~
-The actual measurement performance of BigShape is up to 100 times faster than that of direct JTS for fine and complex geometry (simple geometry does not need BigShape cutting, otherwise the performance may decline)
 
+### 基于jts geometry对象的二维索引
+[geometry2d](https://github.com/codingmiao/neo4j-rtree/tree/v2.x/src/main/java/org/wowtools/neo4j/rtree/geometry2d) 是一个针对二维几何对象的特化包，同样也包含了上述功能，示例如下：
+
+geometry2d 索引数据的的增删改 [Geometry2dRtreeEditor](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/geometry2d/Geometry2dRtreeEditorTest.java)
+
+geometry2d 相交关系查询 [Geometry2dRtreeIntersectsSearcher](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/geometry2d/Geometry2dRtreeEditorTest.java)
+
+geometry2d 最邻近搜索 [Geometry2dRtreeNearestSearcher](https://github.com/codingmiao/neo4j-rtree/blob/v2.x/src/test/java/org/wowtools/neo4j/rtree/geometry2d/Geometry2dRtreeNearestSearcherTest.java)
 
 ## install
-The latest version is `1.4.2.RELEASE`
 
-maven import in your project
+引入maven依赖，最新版本号为2.0.0
+
 ```
             <dependency>
                 <groupId>org.wowtools</groupId>
@@ -86,7 +105,9 @@ maven import in your project
                 <version>${neo4j-rtree-version}</version>
             </dependency>
 ```
-If you already use another version of Neo4j (for example, the Enterprise version) in your project, add exclusions tag:
+
+如果你的项目中已经使用了其它版本的neo4j(例如企业版)而引起冲突，可考虑exclusions:
+
 ```
             <dependency>
                 <groupId>org.wowtools</groupId>
@@ -105,7 +126,7 @@ If you already use another version of Neo4j (for example, the Enterprise version
             </dependency>
 ```
 
-Maven central repository build by jdk11，So if you use jdk8，you must build yourself:
+注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8或其它版本，你可能需要自己编译一份适合于你的jdk的:
 
 clone & install
 
@@ -114,16 +135,3 @@ git clone https://github.com/codingmiao/neo4j-rtree.git
 mvn clean install -DskipTests
 
 ```
-
-
-## about this project
-In this project source, package org.wowtools.neo4j.rtree.spatial is based on from project "Neo4j Spatial" (https://github.com/neo4j-contrib/spatial)
-
-but "Neo4j Spatial" has not been updated for 16 months. With the release of Neo4j 4.0, "Neo4j Spatial" has become unavailable due to a large number of API rewriting.
-Therefore, I extracted the Spatial index part in the Neo4j Spatial and adapted it to Neo4j 4.0.
-
-At the same time, OSM, SHP parsing and other contents in the original project were removed to make the project more streamlined. 
-The idea of this project is to simplify and decouple, and you can use tools such as GeoTools to import files such as SHP independently or integrated with Neo4j, instead of being bundled with Neo4J.
-
-package org.wowtools.neo4j.rtree.nearest is based on project PRTree (https://github.com/EngineHub/PRTree)
-, the nearest neighbor search based on the branch limit method
