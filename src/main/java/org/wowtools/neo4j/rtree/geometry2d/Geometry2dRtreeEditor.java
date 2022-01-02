@@ -28,7 +28,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param graphdb     neo4j db
      * @param commitLimit 操作达到多少个顶点时执行提交操作
      * @param name        索引名
-     * @return
+     * @return Geometry2dRtreeEditor
      */
     public static Geometry2dRtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
         RtreeEditor rtreeEditor = RtreeEditor.get(graphdb, commitLimit, name);
@@ -51,7 +51,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param mMin         索引中每个节点最小子节点数
      * @param mMax         索引中每个节点最大子节点数
      * @param geometryName dataNode中geometry字段名
-     * @return
+     * @return Geometry2dRtreeEditor
      */
     public static Geometry2dRtreeEditor create(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax,
                                                String geometryName) {

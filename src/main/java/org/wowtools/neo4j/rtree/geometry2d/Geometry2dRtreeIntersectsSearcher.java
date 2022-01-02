@@ -31,7 +31,7 @@ public class Geometry2dRtreeIntersectsSearcher {
      *
      * @param tx   事务 此事务需要在外部手动关闭
      * @param name 索引名
-     * @return
+     * @return Geometry2dRtreeIntersectsSearcher
      */
     public static Geometry2dRtreeIntersectsSearcher get(Transaction tx, String name) {
         RtreeIntersectsSearcher rtreeIntersectsSearcher = RtreeIntersectsSearcher.get(tx, name);
@@ -116,8 +116,8 @@ public class Geometry2dRtreeIntersectsSearcher {
          * 针对此场景优化了Geometry.intersects方法 getEnvelopeInternal的相交判断，因为这个已经在rtree里判断过了
          * 一些可以在初始化时判断的东西也提前做掉了，减少intersects时的计算量
          *
-         * @param g
-         * @return
+         * @param g 被判断的geometry
+         * @return 是否相交
          * @see Geometry
          */
         private boolean intersects(Geometry g) {

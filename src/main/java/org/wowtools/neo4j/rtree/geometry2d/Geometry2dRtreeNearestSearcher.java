@@ -32,7 +32,7 @@ public class Geometry2dRtreeNearestSearcher {
      *
      * @param tx   事务 此事务需要在外部手动关闭
      * @param name 索引名
-     * @return
+     * @return Geometry2dRtreeNearestSearcher
      */
     public static Geometry2dRtreeNearestSearcher get(Transaction tx, String name) {
         Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
@@ -53,7 +53,7 @@ public class Geometry2dRtreeNearestSearcher {
      * @param x       x
      * @param y       y
      * @param tx      事务 此事务需要在外部手动关闭
-     * @return
+     * @return Geometry2dRtreeNearestSearcher
      */
     public List<GeometryDistanceResult> nearest(DistanceResultNodeFilter filter, int maxHits, double x, double y, Transaction tx) {
         PointNd pointNd = new PointNd(new double[]{x, y});

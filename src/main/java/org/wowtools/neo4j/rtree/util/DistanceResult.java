@@ -11,6 +11,12 @@ public class DistanceResult {
     protected final double dist;
     protected final long dataNodeId;
 
+    /**
+     * 构造方法需要传入距离和数据节点id
+     *
+     * @param dist       距离
+     * @param dataNodeId 数据节点id
+     */
     public DistanceResult(double dist, long dataNodeId) {
         this.dist = dist;
         this.dataNodeId = dataNodeId;

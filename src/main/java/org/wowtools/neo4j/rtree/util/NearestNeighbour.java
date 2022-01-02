@@ -50,11 +50,11 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
     }
 
     /**
-     * 新建一个DistanceResult对象
+     * 新建一个DistanceResult对象，包含了距离和dataNodeId
      *
      * @param pointNd    查询的点
      * @param dataNodeId dataNodeId
-     * @return
+     * @return DistanceResult对象
      */
     public abstract T createDistanceResult(PointNd pointNd, long dataNodeId);
 
@@ -80,14 +80,7 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
     }
 
 
-    /**
-     * 访问索引上的非叶子节点
-     *
-     * @param node
-     * @param drs
-     * @param maxHits
-     * @param queue
-     */
+    //访问索引上的非叶子节点
     private void nnExpandInternal(Node node,
                                   List<T> drs,
                                   int maxHits,
@@ -107,14 +100,7 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
         }
     }
 
-    /**
-     * 访问索引上的叶子节点
-     *
-     * @param node
-     * @param filter
-     * @param drs
-     * @param maxHits
-     */
+    //访问索引上的叶子节点
     private void nnExpandLeaf(
             Node node,
             DistanceResultNodeFilter filter,

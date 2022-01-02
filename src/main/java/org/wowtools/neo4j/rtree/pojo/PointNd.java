@@ -8,7 +8,7 @@ package org.wowtools.neo4j.rtree.pojo;
  * @date 2021/12/17
  */
 public final class PointNd {
-    private double[] xs;
+    private final double[] xs;
 
     public PointNd(double[] xs) {
         this.xs = xs;
@@ -26,8 +26,7 @@ public final class PointNd {
     /**
      * Get the value of this point in the given dimension
      *
-     * @param d   - dimension
-     * @param <D> - A comparable coordinate
+     * @param d - dimension
      * @return D - value of this point in the dimension
      * @throws IllegalArgumentException if a non-existent dimension is requested
      */
@@ -74,7 +73,7 @@ public final class PointNd {
     /**
      * 获取坐标点
      *
-     * @return
+     * @return 坐标的数组
      */
     public double[] getXs() {
         return xs;

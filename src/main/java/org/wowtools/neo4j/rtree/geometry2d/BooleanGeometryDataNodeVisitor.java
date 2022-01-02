@@ -14,7 +14,7 @@ public interface BooleanGeometryDataNodeVisitor {
     /**
      * 访问到数据节点时触发此方法
      *
-     * @param nodeId 数据节点neo4j id
+     * @param nodeId   数据节点neo4j id
      * @param geometry 数据节点的geometry，由于空间计算时要使用一次，这里就直接把geometry返回了，避免重复的wkb转geometry
      * @return 返回true时，终止接下来的遍历
      */

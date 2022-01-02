@@ -150,7 +150,7 @@ public class TxCell {
                         }
                     }
                 }
-                if (null != parentNid && !hasRelationship) {
+                if (!hasRelationship) {
                     tx.getNodeById(parentNid).createRelationshipTo(tx.getNodeById(nid), Relationships.RTREE_PARENT_TO_CHILD);
                 }
             }

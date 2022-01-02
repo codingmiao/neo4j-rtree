@@ -3,7 +3,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;

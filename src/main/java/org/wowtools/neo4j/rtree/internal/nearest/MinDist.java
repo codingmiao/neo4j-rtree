@@ -1,7 +1,6 @@
 package org.wowtools.neo4j.rtree.internal.nearest;
 
 import org.wowtools.neo4j.rtree.pojo.PointNd;
-import org.wowtools.neo4j.rtree.pojo.RectNd;
 
 /**
  * Class that can calculate the MINDIST between a point and a rectangle

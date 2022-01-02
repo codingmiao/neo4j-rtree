@@ -178,10 +178,10 @@ public final class NodeOfBranch implements Node {
             RectNd mbr = cacheNode.getMbr();
             if (i == 0) {
                 mbr = child[i].getBound();
-                cacheNode.setMbr( mbr);
+                cacheNode.setMbr(mbr);
             } else {
                 mbr = mbr.getMbr(child[i].getBound());
-                cacheNode.setMbr( mbr);
+                cacheNode.setMbr(mbr);
             }
         }
         return this;

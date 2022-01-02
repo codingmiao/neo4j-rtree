@@ -29,7 +29,7 @@ public class GeometryBbox {
             return new double[]{xmin, ymin, xmax, ymax};
         }
 
-        public RectNd toRect2d(){
+        public RectNd toRect2d() {
             return new RectNd(new double[]{xmin, ymin}, new double[]{xmax, ymax});
         }
 

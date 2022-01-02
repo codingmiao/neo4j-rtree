@@ -36,9 +36,9 @@ public class RtreeNearestSearcher<T extends DistanceResult> {
      *
      * @param tx   事务 此事务需要在外部手动关闭
      * @param name 索引名
-     * @return
+     * @return RtreeNearestSearcher
      */
-    public static  RtreeNearestSearcher get(Transaction tx, String name) {
+    public static RtreeNearestSearcher get(Transaction tx, String name) {
         Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
         if (null == metadataNode) {
             throw new RuntimeException("索引 " + name + " 不存在");
@@ -55,7 +55,7 @@ public class RtreeNearestSearcher<T extends DistanceResult> {
      *
      * @param nearestNeighbour 最邻近查询函数
      * @param tx               事务 此事务需要在外部手动关闭
-     * @return
+     * @return RtreeNearestSearcher
      */
     public List<T> nearest(NearestNeighbour<T> nearestNeighbour, Transaction tx) {
         readLock.lock();

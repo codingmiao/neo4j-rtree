@@ -39,7 +39,7 @@ public class RtreeEditor implements AutoCloseable {
      * @param graphdb     neo4j db
      * @param commitLimit 操作达到多少个顶点时执行提交操作
      * @param name        索引名
-     * @return
+     * @return RtreeEditor
      */
     public static RtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
         TxCell txCell = new TxCell(commitLimit, graphdb);
@@ -67,7 +67,7 @@ public class RtreeEditor implements AutoCloseable {
      * @param name        索引名
      * @param mMin        索引中每个节点最小子节点数
      * @param mMax        索引中每个节点最大子节点数
-     * @return
+     * @return RtreeEditor
      */
     public static RtreeEditor create(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
         TxCell txCell = new TxCell(commitLimit, graphdb);
@@ -187,7 +187,7 @@ public class RtreeEditor implements AutoCloseable {
     /**
      * 向索引中添加数据
      *
-     * @param t
+     * @param t 数据的外接矩形
      */
     public void add(final RectNd t) {
         rTree.add(t);

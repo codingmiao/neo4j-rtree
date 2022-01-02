@@ -142,7 +142,7 @@ public final class RTree implements SpatialSearch {
     public void remove(final RectNd t) {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
         if (root != null) {
-            root = root.remove(t);
+            root.remove(t);
         }
     }
 
@@ -150,7 +150,7 @@ public final class RTree implements SpatialSearch {
     public void update(final RectNd told, final RectNd tnew) {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
         if (root != null) {
-            root = root.update(told, tnew);
+            root.update(told, tnew);
         }
     }
 

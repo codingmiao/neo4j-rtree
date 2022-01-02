@@ -39,7 +39,7 @@ public class RtreeIntersectsSearcher {
      *
      * @param tx   事务 此事务需要在外部手动关闭
      * @param name 索引名
-     * @return
+     * @return RtreeIntersectsSearcher
      */
     public static RtreeIntersectsSearcher get(Transaction tx, String name) {
         Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
