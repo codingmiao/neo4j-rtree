@@ -10,7 +10,7 @@ import org.wowtools.neo4j.rtree.internal.edit.RTree;
 import org.wowtools.neo4j.rtree.internal.edit.SpatialSearches;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
+import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -27,12 +27,12 @@ public class Test {
     private Neo4jDbManager neo4jDbManager;
 
     @Before
-    public void before(){
+    public void before() {
         neo4jDbManager = new Neo4jDbManager();
     }
 
     @After
-    public void after(){
+    public void after() {
         neo4jDbManager.afterTest();
     }
 
@@ -41,7 +41,9 @@ public class Test {
         System.out.println("init");
         GeometryFactory gf = new GeometryFactory();
         RectNd.Builder b = new RectNd.Builder();
-        TxCell txCell = new TxCell(200, neo4jDbManager.getGraphDb());
+        int mMin = 2;
+        int mMax = 16;
+        TxCell txCell = new TxCell(200, mMin, mMax, neo4jDbManager.getGraphDb());
         //构造测试数据
         double x0 = 0, x1 = 0.5, y0 = 0, y1 = 0.5;//查询范围
         int num = 32;//测试数据量 4
@@ -84,7 +86,7 @@ public class Test {
 
         System.out.println("start");
         long t = System.currentTimeMillis();
-        RTree tree = (RTree) SpatialSearches.rTree(b, "test1", 2, 16, txCell);
+        RTree tree = (RTree) SpatialSearches.rTree(b, "test1", mMin, mMax, txCell);
 
         // add
         for (int i = 0; i < num; i++) {

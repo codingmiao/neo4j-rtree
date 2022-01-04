@@ -14,7 +14,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.Neo4jDbManager;
-import org.wowtools.neo4j.rtree.util.TxCell;
+import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 
 import java.util.ArrayList;
 import java.util.Random;

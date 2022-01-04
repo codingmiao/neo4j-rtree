@@ -6,7 +6,7 @@ import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.internal.edit.RTree;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
+import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
 
 import java.util.ArrayDeque;
@@ -42,19 +42,25 @@ public class RtreeEditor implements AutoCloseable {
      * @return RtreeEditor
      */
     public static RtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
-        TxCell txCell = new TxCell(commitLimit, graphdb);
-        Node metadataNode;
+        long metadataNodeId;
+        int mMin;
+        int mMax;
         synchronized (RtreeLock.getCreateIndexLock()) {
-            metadataNode = txCell.getTx().findNode(Labels.METADATA, "name", name);
-            if (null == metadataNode) {
-                txCell.close();
-                throw new RuntimeException("索引 " + name + " 不存在");
+            try (Transaction tx = graphdb.beginTx()) {
+                Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
+                if (null == metadataNode) {
+                    throw new RuntimeException("索引 " + name + " 不存在");
+                }
+                metadataNodeId = metadataNode.getId();
+                Map<String, Object> properties = metadataNode.getProperties("mMin", "mMax");
+                mMin = (int) properties.get("mMin");
+                mMax = (int) properties.get("mMax");
             }
+
         }
-        Map<String, Object> properties = metadataNode.getProperties("mMin", "mMax");
-        int mMin = (int) properties.get("mMin");
-        int mMax = (int) properties.get("mMax");
-        RTree rTree = new RTree(new RectNd.Builder(), metadataNode.getId(), mMin, mMax, txCell);
+
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
+        RTree rTree = new RTree(new RectNd.Builder(), metadataNodeId, mMin, mMax, txCell);
         RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
         return rtreeEditor;
     }
@@ -70,7 +76,7 @@ public class RtreeEditor implements AutoCloseable {
      * @return RtreeEditor
      */
     public static RtreeEditor create(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
-        TxCell txCell = new TxCell(commitLimit, graphdb);
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
         Node metadataNode;
         synchronized (RtreeLock.getCreateIndexLock()) {
             metadataNode = txCell.getTx().findNode(Labels.METADATA, "name", name);
@@ -100,7 +106,7 @@ public class RtreeEditor implements AutoCloseable {
      * @return RtreeEditor
      */
     public static RtreeEditor getOrCreate(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
-        TxCell txCell = new TxCell(commitLimit, graphdb);
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
         Node metadataNode;
         boolean exist;
         synchronized (RtreeLock.getCreateIndexLock()) {

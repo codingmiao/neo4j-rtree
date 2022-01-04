@@ -9,14 +9,11 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.io.WKBReader;
 import org.locationtech.jts.io.WKBWriter;
-import org.locationtech.jts.io.WKTReader;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.Neo4jDbManager;
-import org.wowtools.neo4j.rtree.RtreeNearestSearcherTest;
-import org.wowtools.neo4j.rtree.util.TxCell;
+import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 
 import java.util.*;
 

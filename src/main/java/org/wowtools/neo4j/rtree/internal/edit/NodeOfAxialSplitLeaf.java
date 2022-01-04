@@ -22,7 +22,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
 
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -51,7 +50,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
 
     @Override
     protected Node split(final RectNd t) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
         RectNd mbr = cacheNode.getMbr();
 

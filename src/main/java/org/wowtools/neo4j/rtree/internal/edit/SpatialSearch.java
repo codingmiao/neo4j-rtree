@@ -115,6 +115,4 @@ public interface SpatialSearch {
      */
     void forEach(Consumer consumer);
 
-    Stats collectStats();
-
 }

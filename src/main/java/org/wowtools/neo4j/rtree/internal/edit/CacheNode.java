@@ -6,7 +6,6 @@ import org.neo4j.graphdb.Relationship;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.*;
 
@@ -25,12 +24,22 @@ public class CacheNode {
     };
 
     private final long nodeId;
+    private Node node;
+
     private final TxCell txCell;
+
     private final HashMap<String, Object> properties = new HashMap<>();
     private final HashSet<String> changedKey = new HashSet<>();//标记哪些属性发生过变化，commit时统一node.setProperty
+
     private RectNd mbr;
+
     private org.wowtools.neo4j.rtree.internal.edit.Node[] children;
+
     private RectNd[] entry;
+
+    private final int initSize;
+    private int size;
+
 
     public final NodeType nodeType;
 
@@ -39,19 +48,24 @@ public class CacheNode {
         this.nodeId = nodeId;
         this.txCell = txCell;
         this.nodeType = nodeType;
+        size = (int) _node().getProperty("size", 0);
+        initSize = size;
     }
 
     public void commit() {
-        if (changedKey.size() == 0) {
-            return;
+        if (initSize != size) {
+            _node().setProperty("size", size);
         }
-        Node node = _node();
-        for (String k : changedKey) {
-            Object v = properties.get(k);
-            if (v == empty) {
-                node.removeProperty(k);
-            } else {
-                node.setProperty(k, v);
+
+        if (changedKey.size() != 0) {
+            Node node = _node();
+            for (String k : changedKey) {
+                Object v = properties.get(k);
+                if (v == empty) {
+                    node.removeProperty(k);
+                } else {
+                    node.setProperty(k, v);
+                }
             }
         }
     }
@@ -62,6 +76,7 @@ public class CacheNode {
         mbr = null;
         children = null;
         entry = null;
+        node = null;
     }
 
     public Object getProperty(String key) {
@@ -128,7 +143,7 @@ public class CacheNode {
 
     public org.wowtools.neo4j.rtree.internal.edit.Node[] getChildren() {
         if (null == children) {
-            int mMax = (int) getProperty("mMax");
+            int mMax = txCell.getmMax();
             children = new org.wowtools.neo4j.rtree.internal.edit.Node[mMax];
             int i = 0;
             HashSet<Long> added = new HashSet<>();
@@ -168,7 +183,6 @@ public class CacheNode {
      * @param i
      */
     public void childIndexUp(int i) {
-        int size = (int) getProperty("size");
         children = getChildren();
 
         int j = i;
@@ -179,7 +193,6 @@ public class CacheNode {
             j++;
         }
         size--;
-        setProperty("size", size);
         org.wowtools.neo4j.rtree.internal.edit.Node old = children[size];
         if (null != old) {
             txCell.setNodeParent(old.getNeoNodeId(), null);
@@ -190,13 +203,11 @@ public class CacheNode {
 
 
     public int addChild(final org.wowtools.neo4j.rtree.internal.edit.Node n) {
-        int size = (int) getProperty("size");
-        int mMax = (int) getProperty("mMax");
+        int mMax = txCell.getmMax();
         RectNd mbr = getMbr();
         if (size < mMax) {
             setChildAtI(size, n);
             size += 1;
-            setProperty("size", size);
 
             if (mbr != null) {
                 mbr = mbr.getMbr(n.getBound());
@@ -213,7 +224,7 @@ public class CacheNode {
 
     public RectNd[] getEntry() {
         if (null == entry) {
-            int mMax = (int) getProperty("mMax");
+            int mMax = txCell.getmMax();
             List<String> keys = new ArrayList<>(mMax * 3);
             for (int i = 0; i < mMax; i++) {
                 keys.add("entryMin" + i);
@@ -280,7 +291,18 @@ public class CacheNode {
     }
 
     private Node _node() {
-        return txCell.getTx().getNodeById(nodeId);
+        if (null == node) {
+            node = txCell.getTx().getNodeById(nodeId);
+        }
+        return node;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public enum NodeType {

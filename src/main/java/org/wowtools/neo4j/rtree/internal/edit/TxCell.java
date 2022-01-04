@@ -1,4 +1,4 @@
-package org.wowtools.neo4j.rtree.util;
+package org.wowtools.neo4j.rtree.internal.edit;
 
 import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
@@ -26,6 +26,8 @@ public class TxCell {
     private Transaction tx;
 
     private final int limit;
+    private final int mMin;
+    private final int mMax;
     private final GraphDatabaseService graphDb;
 
     private int num;
@@ -41,7 +43,7 @@ public class TxCell {
         if (null != cacheNode) {
             return cacheNode;
         }
-        Node noeNode = getTx().getNodeById(nodeId);
+        org.neo4j.graphdb.Node noeNode = getTx().getNodeById(nodeId);
         String labelName = noeNode.getLabels().iterator().next().name();
         if (labelName.equals(Labels.RTREE_BRANCH.name())) {
             cacheNode = new CacheNode(nodeId, this, CacheNode.NodeType.Branch);
@@ -56,7 +58,7 @@ public class TxCell {
 
 
     public CacheNode newNode(Label label) {
-        Node node = tx.createNode(label);
+        org.neo4j.graphdb.Node node = tx.createNode(label);
         CacheNode.NodeType nodeType;
         if (label == Labels.RTREE_BRANCH) {
             nodeType = CacheNode.NodeType.Branch;
@@ -75,7 +77,7 @@ public class TxCell {
     }
 
     public org.wowtools.neo4j.rtree.internal.edit.Node getNodeFromNeo4j(long nid) {
-        Node node = getTx().getNodeById(nid);
+        org.neo4j.graphdb.Node node = getTx().getNodeById(nid);
         String labelName = node.getLabels().iterator().next().name();
         if (labelName.equals(Labels.RTREE_BRANCH.name())) {
             return NodeOfBranch.getFromNeo(getBuilder(), nid, this);
@@ -86,8 +88,10 @@ public class TxCell {
         }
     }
 
-    public TxCell(int limit, GraphDatabaseService graphDb) {
+    public TxCell(int limit,int mMin, int mMax, GraphDatabaseService graphDb) {
         this.limit = limit;
+        this.mMin = mMin;
+        this.mMax = mMax;
         this.graphDb = graphDb;
         tx = newTx();
     }
@@ -171,14 +175,14 @@ public class TxCell {
      */
     private void neoGc() {
         cacheNodeMap.forEach((id, n) -> {
-            Node node;
+            org.neo4j.graphdb.Node node;
             try {
                 node = tx.getNodeById(id);
             } catch (NotFoundException e) {
                 //node已在前面的遍历中被删除，跳过
                 return;
             }
-            Node thisRoot = node;
+            org.neo4j.graphdb.Node thisRoot = node;
             ArrayDeque<Long> stack = new ArrayDeque<>();
             stack.push(node.getId());
             boolean findRoot = false;
@@ -196,7 +200,7 @@ public class TxCell {
                 }
                 //将父节点丢进栈继续
                 for (Relationship relationship : node.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
-                    Node parent = relationship.getStartNode();
+                    org.neo4j.graphdb.Node parent = relationship.getStartNode();
                     thisRoot = parent;
                     stack.push(parent.getId());
                 }
@@ -213,7 +217,7 @@ public class TxCell {
                     }
                     //遍历子节点
                     for (Relationship relationship : node.getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
-                        Node parent = relationship.getStartNode();
+                        org.neo4j.graphdb.Node parent = relationship.getStartNode();
                         thisRoot = parent;
                         stack.push(parent.getId());
                     }
@@ -229,5 +233,13 @@ public class TxCell {
 
     public void close() {
         tx.close();
+    }
+
+    public int getmMin() {
+        return mMin;
+    }
+
+    public int getmMax() {
+        return mMax;
     }
 }

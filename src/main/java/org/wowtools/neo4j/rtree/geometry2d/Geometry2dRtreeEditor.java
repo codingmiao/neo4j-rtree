@@ -5,7 +5,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.wowtools.neo4j.rtree.RtreeEditor;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
+import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
 
 /**

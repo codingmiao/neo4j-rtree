@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -195,25 +194,6 @@ public final class RTree implements SpatialSearch {
         }
     }
 
-    void instrumentTree() {
-        Node root = txCell.getNodeFromNeo4j(rootNodeId);
-        if (root != null) {
-            root = root.instrument();
-            ((CounterNode) root).searchCount = 0;
-            ((CounterNode) root).bboxEvalCount = 0;
-        }
-    }
-
-    @Override
-    public Stats collectStats() {
-        Node root = txCell.getNodeFromNeo4j(rootNodeId);
-        Stats stats = new Stats();
-        stats.setType(SpatialSearches.DEFAULT_SPLIT_TYPE);
-        stats.setMaxFill(mMax);
-        stats.setMinFill(mMin);
-        root.collectStats(stats, 0);
-        return stats;
-    }
 
     public Node getRoot() {
         Node root = txCell.getNodeFromNeo4j(rootNodeId);
@@ -223,6 +203,18 @@ public final class RTree implements SpatialSearch {
 
     public long getMetadataNodeId() {
         return metadataNodeId;
+    }
+
+    public int getmMin() {
+        return mMin;
+    }
+
+    public int getmMax() {
+        return mMax;
+    }
+
+    public long getRootNodeId() {
+        return rootNodeId;
     }
 
     /**

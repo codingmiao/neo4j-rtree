@@ -22,7 +22,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
 
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.function.Consumer;
 
@@ -47,8 +46,8 @@ abstract class NodeOfLeaf implements Node {
         this.txCell = txCell;
         this.cacheNode = txCell.getNode(node.getId());
 
-        this.mMin = (int) cacheNode.getProperty("mMin");
-        this.mMax = (int) cacheNode.getProperty("mMax");
+        this.mMin = txCell.getmMin();
+        this.mMax = txCell.getmMax();
         this.builder = builder;
     }
 
@@ -58,9 +57,7 @@ abstract class NodeOfLeaf implements Node {
 
 
         cacheNode = txCell.newNode(Labels.RTREE_LEAF);
-        cacheNode.setProperty("mMax", mMax);
-        cacheNode.setProperty("mMin", mMin);
-        cacheNode.setProperty("size", 0);
+        cacheNode.setSize(0);
 
         this.mMin = mMin;
         this.mMax = mMax;
@@ -69,7 +66,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public Node add(final RectNd t) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         if (size < mMax) {
             RectNd mbr = cacheNode.getMbr();
             final RectNd tRect = builder.getBBox(t);
@@ -81,7 +78,7 @@ abstract class NodeOfLeaf implements Node {
             cacheNode.setMbr((RectNd) mbr);
             cacheNode.setEntryAtI(size, t);
             size = size + 1;
-            cacheNode.setProperty("size", size);
+            cacheNode.setSize(size);
         } else {
             return split(t);
         }
@@ -91,7 +88,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public Node remove(final RectNd t) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
         int i = 0;
         int j;
@@ -128,7 +125,7 @@ abstract class NodeOfLeaf implements Node {
             }
 
             size -= nRemoved;
-            cacheNode.setProperty("size", size);
+            cacheNode.setSize(size);
 
             RectNd mbr = null;
             for (int k = 0; k < size; k++) {
@@ -139,7 +136,7 @@ abstract class NodeOfLeaf implements Node {
                 }
             }
             if (null != mbr) {
-                cacheNode.setMbr((RectNd) mbr);
+                cacheNode.setMbr(mbr);
             }
 
         }
@@ -150,7 +147,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public Node update(final RectNd told, final RectNd tnew) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         RectNd mbr = null;
@@ -175,7 +172,7 @@ abstract class NodeOfLeaf implements Node {
     public int search(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         for (int i = 0; i < size && n < tLen; i++) {
@@ -188,7 +185,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public void search(RectNd rect, Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
         for (int i = 0; i < size; i++) {
             if (rect.contains(entry[i])) {
@@ -202,7 +199,7 @@ abstract class NodeOfLeaf implements Node {
         final int tLen = t.length;
         final int n0 = n;
 
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         for (int i = 0; i < size && n < tLen; i++) {
@@ -215,7 +212,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public void intersects(RectNd rect, Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         for (int i = 0; i < size; i++) {
@@ -227,12 +224,12 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public int size() {
-        return (int) cacheNode.getProperty("size");
+        return cacheNode.getSize();
     }
 
     @Override
     public int totalSize() {
-        return (int) cacheNode.getProperty("size");
+        return cacheNode.getSize();
     }
 
     @Override
@@ -260,7 +257,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public void forEach(Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         for (int i = 0; i < size; i++) {
@@ -270,7 +267,7 @@ abstract class NodeOfLeaf implements Node {
 
     @Override
     public boolean contains(RectNd rect, RectNd t) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         RectNd[] entry = cacheNode.getEntry();
 
         for (int i = 0; i < size; i++) {
@@ -281,17 +278,6 @@ abstract class NodeOfLeaf implements Node {
             }
         }
         return false;
-    }
-
-    @Override
-    public void collectStats(Stats stats, int depth) {
-        int size = (int) cacheNode.getProperty("size");
-
-        if (depth > stats.getMaxDepth()) {
-            stats.setMaxDepth(depth);
-        }
-        stats.countLeafAtDepth(depth);
-        stats.countEntriesAtDepth(size, depth);
     }
 
     /**
@@ -347,10 +333,5 @@ abstract class NodeOfLeaf implements Node {
         sb.append(']');
 
         return sb.toString();
-    }
-
-    @Override
-    public Node instrument() {
-        return new NodeOfCounter(this);
     }
 }

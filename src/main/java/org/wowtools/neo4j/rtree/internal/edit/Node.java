@@ -130,20 +130,6 @@ public interface Node {
      */
     void forEach(Consumer<RectNd> consumer);
 
-    /**
-     * Recurses over index collecting stats
-     *
-     * @param stats - Stats object being populated
-     * @param depth - current depth in tree
-     */
-    void collectStats(Stats stats, int depth);
-
-    /**
-     * Visits node, wraps it in an instrumented node, (see CounterNode)
-     *
-     * @return instrumented node wrapper
-     */
-    Node instrument();
 
     /**
      * 获取图库中的id

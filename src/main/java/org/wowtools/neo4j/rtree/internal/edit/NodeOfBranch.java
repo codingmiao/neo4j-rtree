@@ -22,7 +22,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
 
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
-import org.wowtools.neo4j.rtree.util.TxCell;
 
 import java.util.function.Consumer;
 
@@ -51,8 +50,8 @@ public final class NodeOfBranch implements Node {
     private NodeOfBranch(RectBuilder builder, org.neo4j.graphdb.Node node, TxCell txCell) {
         this.builder = builder;
         this.cacheNode = txCell.getNode(node.getId());
-        this.mMax = (int) cacheNode.getProperty("mMax");
-        this.mMin = (int) cacheNode.getProperty("mMin");
+        this.mMax = txCell.getmMax();
+        this.mMin = txCell.getmMin();
         if (null == cacheNode) {
             throw new RuntimeException("逻辑错误");
         }
@@ -61,9 +60,7 @@ public final class NodeOfBranch implements Node {
 
     NodeOfBranch(final RectBuilder builder, final int mMin, final int mMax, TxCell txCell) {
         cacheNode = txCell.newNode(Labels.RTREE_BRANCH);
-        cacheNode.setProperty("mMax", mMax);
-        cacheNode.setProperty("mMin", mMin);
-        cacheNode.setProperty("size", 0);
+        cacheNode.setSize(0);
 
         this.txCell = txCell;
         this.mMin = mMin;
@@ -100,7 +97,7 @@ public final class NodeOfBranch implements Node {
     @Override
     public Node add(final RectNd t) {
         final RectNd tRect = builder.getBBox(t);
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         if (size < mMin) {
             for (int i = 0; i < size; i++) {
@@ -135,7 +132,7 @@ public final class NodeOfBranch implements Node {
     @Override
     public Node remove(final RectNd t) {
         final RectNd tRect = builder.getBBox(t);
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (child[i].getBound().intersects(tRect)) {
@@ -144,7 +141,7 @@ public final class NodeOfBranch implements Node {
 //                    System.arraycopy(child, i + 1, child, i, size - i - 1);
                     //把所有child的位置上移一位
                     cacheNode.childIndexUp(i);
-                    size = (int) cacheNode.getProperty("size");
+                    size = cacheNode.getSize();
                     if (size > 0) i--;
                 }
             }
@@ -161,7 +158,7 @@ public final class NodeOfBranch implements Node {
         for (int i = 1; i < size; i++) {
             mbr = mbr.getMbr(child[i].getBound());
         }
-        cacheNode.setMbr((RectNd) mbr);
+        cacheNode.setMbr( mbr);
 
         return this;
     }
@@ -169,7 +166,7 @@ public final class NodeOfBranch implements Node {
     @Override
     public Node update(final RectNd told, final RectNd tnew) {
         final RectNd tRect = builder.getBBox(told);
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (tRect.intersects(child[i].getBound())) {
@@ -189,7 +186,7 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public void search(RectNd rect, Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (rect.intersects(child[i].getBound())) {
@@ -202,7 +199,7 @@ public final class NodeOfBranch implements Node {
     public int search(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size && n < tLen; i++) {
             if (rect.intersects(child[i].getBound())) {
@@ -214,7 +211,7 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public void intersects(RectNd rect, Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (rect.intersects(child[i].getBound())) {
@@ -227,7 +224,7 @@ public final class NodeOfBranch implements Node {
     public int intersects(final RectNd rect, final RectNd[] t, int n) {
         final int tLen = t.length;
         final int n0 = n;
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size && n < tLen; i++) {
             if (rect.intersects(child[i].getBound())) {
@@ -242,13 +239,13 @@ public final class NodeOfBranch implements Node {
      */
     @Override
     public int size() {
-        return (int) cacheNode.getProperty("size");
+        return cacheNode.getSize();
     }
 
     @Override
     public int totalSize() {
         int s = 0;
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
 
         for (int i = 0; i < size; i++) {
@@ -258,7 +255,7 @@ public final class NodeOfBranch implements Node {
     }
 
     private int chooseLeaf(final RectNd t, final RectNd tRect) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         if (size > 0) {
             int bestNode = 0;
@@ -289,7 +286,7 @@ public final class NodeOfBranch implements Node {
             n.add(t);
             cacheNode.setChildAtI(size, n);
             size = size + 1;
-            cacheNode.setProperty("size", size);
+            cacheNode.setSize(size);
 
             RectNd mbr = cacheNode.getMbr();
             if (mbr == null) {
@@ -314,7 +311,7 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public void forEach(Consumer consumer) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             child[i].forEach(consumer);
@@ -323,7 +320,7 @@ public final class NodeOfBranch implements Node {
 
     @Override
     public boolean contains(RectNd rect, RectNd t) {
-        int size = (int) cacheNode.getProperty("size");
+        int size = cacheNode.getSize();
         Node[] child = cacheNode.getChildren();
         for (int i = 0; i < size; i++) {
             if (rect.intersects(child[i].getBound())) {
@@ -333,15 +330,6 @@ public final class NodeOfBranch implements Node {
         return false;
     }
 
-    @Override
-    public void collectStats(Stats stats, int depth) {
-        int size = (int) cacheNode.getProperty("size");
-        Node[] child = cacheNode.getChildren();
-        for (int i = 0; i < size; i++) {
-            child[i].collectStats(stats, depth + 1);
-        }
-        stats.countBranchAtDepth(depth);
-    }
 
     @Override
     public String toString() {
@@ -353,15 +341,6 @@ public final class NodeOfBranch implements Node {
         return sb.toString();
     }
 
-    @Override
-    public Node instrument() {
-        int size = (int) cacheNode.getProperty("size");
-        Node[] child = cacheNode.getChildren();
-        for (int i = 0; i < size; i++) {
-            child[i] = child[i].instrument();
-        }
-        return new NodeOfCounter(this);
-    }
 
     @Override
     public long getNeoNodeId() {

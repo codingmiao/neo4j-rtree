@@ -20,8 +20,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
  * #L%
  */
 
-import org.wowtools.neo4j.rtree.util.TxCell;
-
 /**
  * Create instances of SpatialSearch implementations
  * <p>
