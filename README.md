@@ -101,7 +101,7 @@ geometry2d 最邻近搜索 [Geometry2dRtreeNearestSearcher](https://github.com/c
 
 ## install
 
-引入maven依赖，最新版本号为2.0.0
+引入maven依赖，最新版本号为2.0.2
 
 ```
             <dependency>
