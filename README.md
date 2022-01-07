@@ -61,7 +61,7 @@ try (Transaction tx = db.beginTx()) {
 ~~~java
     //求距离点(x,y)距离最近的5个点点
     double x = 0.5, y = 0.5;
-    int hitNum = 5；
+    int hitNum = 5;
     try (Transaction tx = db.beginTx()) {
         //构建一个RtreeNearestSearcher对象
         RtreeNearestSearcher searcher = RtreeNearestSearcher.get(tx, indexName);
