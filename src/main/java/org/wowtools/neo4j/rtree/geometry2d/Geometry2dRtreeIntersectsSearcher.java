@@ -107,7 +107,7 @@ public class Geometry2dRtreeIntersectsSearcher {
                 throw new RuntimeException("解析node的geometry数据出错 ,节点id " + nodeId + " ,字段名" + geometryName, e);
             }
             if (intersects(nodeGeometry)) {
-                return visitor.visit(nodeId, geometry);
+                return visitor.visit(nodeId, nodeGeometry);
             }
             return false;
         }

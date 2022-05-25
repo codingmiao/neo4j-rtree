@@ -53,7 +53,7 @@ public class Geometry2dRtreeNearestSearcher {
      * @param x       x
      * @param y       y
      * @param tx      事务 此事务需要在外部手动关闭
-     * @return Geometry2dRtreeNearestSearcher
+     * @return GeometryDistanceResult list，包含了geometry、与输入点的距离、nodeId
      */
     public List<GeometryDistanceResult> nearest(DistanceResultNodeFilter filter, int maxHits, double x, double y, Transaction tx) {
         PointNd pointNd = new PointNd(new double[]{x, y});
