@@ -38,8 +38,8 @@ public class Geometry2dQueryFunctionTest {
         try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.create(neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8, geometryName)) {
             TxCell txCell = rtreeEditor.getTxCell();
             for (int i = 0; i < num; i++) {
-                double x = r.nextDouble();
-                double y = r.nextDouble();
+                double x = 100 + r.nextDouble() * 20;
+                double y = 20 + r.nextDouble() * 10;
                 Geometry geometry = geometryFactory.createPoint(new Coordinate(x, y));
                 geometry = geometry.buffer(r.nextDouble() * 0.1);
                 byte[] wkb = wkbWriter.write(geometry);
@@ -59,10 +59,10 @@ public class Geometry2dQueryFunctionTest {
         try (Transaction tx = session.beginTransaction()) {
             Result result = tx.run("return nr.g2d.bboxIntersects($indexName,$xmin,$ymin,$xmax,$ymax,$propertyNames)", Map.of(
                     "indexName", indexName,
-                    "xmin", 0,
-                    "ymin", 0,
-                    "xmax", 0.1,
-                    "ymax", 0.1,
+                    "xmin", 100,
+                    "ymin", 20,
+                    "xmax", 110,
+                    "ymax", 25,
                     "propertyNames", List.of("name")
             ));
             byte[] bytes = result.single().get(0).asByteArray();
@@ -76,7 +76,7 @@ public class Geometry2dQueryFunctionTest {
         try (Transaction tx = session.beginTransaction()) {
             Result result = tx.run("return nr.g2d.geoIntersects($indexName,$wkt,$propertyNames)", Map.of(
                     "indexName", indexName,
-                    "wkt", "POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))",
+                    "wkt", "POLYGON ((100 20, 110 20, 110 25, 100 25, 100 20))",
                     "propertyNames", List.of("name")
             ));
             byte[] bytes = result.single().get(0).asByteArray();
@@ -90,8 +90,8 @@ public class Geometry2dQueryFunctionTest {
         try (Transaction tx = session.beginTransaction()) {
             Result result = tx.run("return nr.g2d.nearest($indexName,$x,$y,$n,$propertyNames)", Map.of(
                     "indexName", indexName,
-                    "x", 0.2,
-                    "y", 0.3,
+                    "x", 103,
+                    "y", 24,
                     "n", 5,
                     "propertyNames", List.of("name")
             ));
@@ -103,7 +103,7 @@ public class Geometry2dQueryFunctionTest {
         }
         System.out.println("nearest end----------------------------------------");
 
-        System.exit(0);
+//        System.exit(0);
     }
 
 }
