@@ -29,6 +29,7 @@ import org.wowtools.neo4j.rtree.pojo.RectNd;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -50,8 +51,8 @@ public final class RTree implements SpatialSearch {
     private final TxCell txCell;
 
 
-    private long rootNodeId = -1;
-    private final long metadataNodeId;
+    private String rootNodeId = "";
+    private final String metadataNodeId;
 
     public RTree(final RectBuilder builder, String name, final int mMin, final int mMax, TxCell txCell) {
         this.mMin = mMin;
@@ -64,10 +65,10 @@ public final class RTree implements SpatialSearch {
         metadataNode.setProperty("mMin", mMin);
         metadataNode.setProperty("mMax", mMax);
         metadataNode.setProperty("name", name);
-        metadataNodeId = metadataNode.getId();
+        metadataNodeId = metadataNode.getElementId();
     }
 
-    public RTree(final RectBuilder builder, long metadataNodeId, final int mMin, final int mMax, TxCell txCell) {
+    public RTree(final RectBuilder builder, final int mMin, final int mMax, TxCell txCell, String metadataNodeId) {
         this.mMin = mMin;
         this.mMax = mMax;
         this.builder = builder;
@@ -75,10 +76,10 @@ public final class RTree implements SpatialSearch {
         this.metadataNodeId = metadataNodeId;
 
         //查找root
-        org.neo4j.graphdb.Node metadataNode = txCell.getTx().getNodeById(metadataNodeId);
+        org.neo4j.graphdb.Node metadataNode = txCell.getTx().getNodeByElementId(metadataNodeId);
         Iterator<Relationship> iterator = metadataNode.getRelationships(Direction.OUTGOING, Relationships.RTREE_METADATA_TO_ROOT).iterator();
         if (iterator.hasNext()) {
-            rootNodeId = iterator.next().getEndNodeId();
+            rootNodeId = iterator.next().getEndNode().getElementId();
         }
     }
 
@@ -117,23 +118,23 @@ public final class RTree implements SpatialSearch {
     @Override
     public void add(final RectNd t) {
         Node root;
-        if (rootNodeId != -1) {
+        if (!"".equals(rootNodeId)) {
             root = txCell.getNodeFromNeo4j(rootNodeId);
             root = root.add(t);
         } else {
             root = NodeOfLeaf.create(builder, mMin, mMax, txCell);
             root.add(t);
         }
-        long newRootId = root.getNeoNodeId();
-        if (rootNodeId != newRootId) {
+        String newRootId = root.getNeoNodeId();
+        if (!Objects.equals(rootNodeId, newRootId)) {
             //root节点变化，修改metadata节点指向
             rootNodeId = newRootId;
             Transaction tx = txCell.getTx();
-            org.neo4j.graphdb.Node metadataNode = tx.getNodeById(metadataNodeId);
+            org.neo4j.graphdb.Node metadataNode = tx.getNodeByElementId(metadataNodeId);
             for (Relationship relationship : metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT)) {
                 relationship.delete();
             }
-            metadataNode.createRelationshipTo(tx.getNodeById(rootNodeId), Relationships.RTREE_METADATA_TO_ROOT);
+            metadataNode.createRelationshipTo(tx.getNodeByElementId(rootNodeId), Relationships.RTREE_METADATA_TO_ROOT);
         }
     }
 
@@ -201,7 +202,7 @@ public final class RTree implements SpatialSearch {
     }
 
 
-    public long getMetadataNodeId() {
+    public String getMetadataNodeId() {
         return metadataNodeId;
     }
 
@@ -213,7 +214,7 @@ public final class RTree implements SpatialSearch {
         return mMax;
     }
 
-    public long getRootNodeId() {
+    public String getRootNodeId() {
         return rootNodeId;
     }
 

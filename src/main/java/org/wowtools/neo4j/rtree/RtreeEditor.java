@@ -42,7 +42,7 @@ public class RtreeEditor implements AutoCloseable {
      * @return RtreeEditor
      */
     public static RtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
-        long metadataNodeId;
+        String metadataNodeId;
         int mMin;
         int mMax;
         synchronized (RtreeLock.getCreateIndexLock()) {
@@ -51,7 +51,7 @@ public class RtreeEditor implements AutoCloseable {
                 if (null == metadataNode) {
                     throw new RuntimeException("索引 " + name + " 不存在");
                 }
-                metadataNodeId = metadataNode.getId();
+                metadataNodeId = metadataNode.getElementId();
                 Map<String, Object> properties = metadataNode.getProperties("mMin", "mMax");
                 mMin = (int) properties.get("mMin");
                 mMax = (int) properties.get("mMax");
@@ -60,7 +60,7 @@ public class RtreeEditor implements AutoCloseable {
         }
 
         TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
-        RTree rTree = new RTree(new RectNd.Builder(), metadataNodeId, mMin, mMax, txCell);
+        RTree rTree = new RTree(new RectNd.Builder(), mMin, mMax, txCell, metadataNodeId);
         RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
         return rtreeEditor;
     }
@@ -90,7 +90,7 @@ public class RtreeEditor implements AutoCloseable {
         metadataNode.setProperty("mMax", mMax);
         metadataNode.setProperty("name", name);
 
-        RTree rTree = new RTree(new RectNd.Builder(), metadataNode.getId(), mMin, mMax, txCell);
+        RTree rTree = new RTree(new RectNd.Builder(), mMin, mMax, txCell, metadataNode.getElementId());
         RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
         return rtreeEditor;
     }
@@ -120,7 +120,7 @@ public class RtreeEditor implements AutoCloseable {
         }
 
         if (exist) {
-            RTree rTree = new RTree(new RectNd.Builder(), metadataNode.getId(), mMin, mMax, txCell);
+            RTree rTree = new RTree(new RectNd.Builder(), mMin, mMax, txCell, metadataNode.getElementId());
             RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
             return rtreeEditor;
         } else {
@@ -128,7 +128,7 @@ public class RtreeEditor implements AutoCloseable {
             metadataNode.setProperty("mMax", mMax);
             metadataNode.setProperty("name", name);
 
-            RTree rTree = new RTree(new RectNd.Builder(), metadataNode.getId(), mMin, mMax, txCell);
+            RTree rTree = new RTree(new RectNd.Builder(), mMin, mMax, txCell, metadataNode.getElementId());
             RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
             return rtreeEditor;
         }

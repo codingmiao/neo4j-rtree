@@ -62,7 +62,7 @@ public class Neo4jDbManager {
         for (String cfgKey : cfgKeys) {//把所有配置都读到map里，解决默认端口无法修改的问题
             configOverrides.put(cfgKey, p.getProperty(cfgKey));
         }
-        serverBootstrapper.start(storeDir, configOverrides);
+        serverBootstrapper.start(storeDir.toPath(), configOverrides);
         graphDb = serverBootstrapper.getDatabaseManagementService().database("neo4j");
     }
 

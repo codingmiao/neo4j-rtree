@@ -34,16 +34,16 @@ public class TxCell {
 
     private final RectBuilder builder = new RectNd.Builder();
 
-    private final Map<Long, CacheNode> cacheNodeMap = new HashMap<>();
+    private final Map<String, CacheNode> cacheNodeMap = new HashMap<>();
 
-    private final Map<Long, Long> nodeParentMap = new HashMap<>();
+    private final Map<String, String> nodeParentMap = new HashMap<>();
 
-    public CacheNode getNode(long nodeId) {
+    public CacheNode getNode(String nodeId) {
         CacheNode cacheNode = cacheNodeMap.get(nodeId);
         if (null != cacheNode) {
             return cacheNode;
         }
-        org.neo4j.graphdb.Node noeNode = getTx().getNodeById(nodeId);
+        org.neo4j.graphdb.Node noeNode = getTx().getNodeByElementId(nodeId);
         String labelName = noeNode.getLabels().iterator().next().name();
         if (labelName.equals(Labels.RTREE_BRANCH.name())) {
             cacheNode = new CacheNode(nodeId, this, CacheNode.NodeType.Branch);
@@ -67,17 +67,17 @@ public class TxCell {
         } else {
             throw new RuntimeException("未知label " + label.name());
         }
-        CacheNode cacheNode = new CacheNode(node.getId(), this, nodeType);
-        cacheNodeMap.put(node.getId(), cacheNode);
+        CacheNode cacheNode = new CacheNode(node.getElementId(), this, nodeType);
+        cacheNodeMap.put(node.getElementId(), cacheNode);
         return cacheNode;
     }
 
-    public void setNodeParent(Long nodeId, Long parentNodeId) {
+    public void setNodeParent(String nodeId, String parentNodeId) {
         nodeParentMap.put(nodeId, parentNodeId);
     }
 
-    public org.wowtools.neo4j.rtree.internal.edit.Node getNodeFromNeo4j(long nid) {
-        org.neo4j.graphdb.Node node = getTx().getNodeById(nid);
+    public org.wowtools.neo4j.rtree.internal.edit.Node getNodeFromNeo4j(String nid) {
+        org.neo4j.graphdb.Node node = getTx().getNodeByElementId(nid);
         String labelName = node.getLabels().iterator().next().name();
         if (labelName.equals(Labels.RTREE_BRANCH.name())) {
             return NodeOfBranch.getFromNeo(getBuilder(), nid, this);
@@ -138,16 +138,16 @@ public class TxCell {
         //RTREE_PARENT_TO_CHILD关系变更
         nodeParentMap.forEach((nid, parentNid) -> {
             if (null == parentNid) {//parentNid为空，删除旧关系
-                for (Relationship relationship : tx.getNodeById(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                for (Relationship relationship : tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
                     relationship.delete();
                 }
             } else {//parentNid非空，修改关系
                 boolean hasRelationship = false;//新的关系是否已存在
-                for (Relationship relationship : tx.getNodeById(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                for (Relationship relationship : tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
                     if (hasRelationship) {
                         relationship.delete();
                     } else {
-                        if (parentNid == relationship.getStartNodeId()) {
+                        if (parentNid.equals(relationship.getElementId())) {
                             hasRelationship = true;
                         } else {
                             relationship.delete();
@@ -155,7 +155,7 @@ public class TxCell {
                     }
                 }
                 if (!hasRelationship) {
-                    tx.getNodeById(parentNid).createRelationshipTo(tx.getNodeById(nid), Relationships.RTREE_PARENT_TO_CHILD);
+                    tx.getNodeByElementId(parentNid).createRelationshipTo(tx.getNodeByElementId(nid), Relationships.RTREE_PARENT_TO_CHILD);
                 }
             }
         });
@@ -177,18 +177,18 @@ public class TxCell {
         cacheNodeMap.forEach((id, n) -> {
             org.neo4j.graphdb.Node node;
             try {
-                node = tx.getNodeById(id);
+                node = tx.getNodeByElementId(id);
             } catch (NotFoundException e) {
                 //node已在前面的遍历中被删除，跳过
                 return;
             }
             org.neo4j.graphdb.Node thisRoot = node;
-            ArrayDeque<Long> stack = new ArrayDeque<>();
-            stack.push(node.getId());
+            ArrayDeque<String> stack = new ArrayDeque<>();
+            stack.push(node.getElementId());
             boolean findRoot = false;
             do {
                 try {
-                    node = tx.getNodeById(stack.pop());
+                    node = tx.getNodeByElementId(stack.pop());
                 } catch (NotFoundException e) {
                     continue;
                 }
@@ -202,16 +202,16 @@ public class TxCell {
                 for (Relationship relationship : node.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
                     org.neo4j.graphdb.Node parent = relationship.getStartNode();
                     thisRoot = parent;
-                    stack.push(parent.getId());
+                    stack.push(parent.getElementId());
                 }
             } while (!stack.isEmpty());
             //未找到根节点，则删除所有本次遍历过的设备
             if (!findRoot) {
                 stack = new ArrayDeque<>();
-                stack.push(thisRoot.getId());
+                stack.push(thisRoot.getElementId());
                 do {
                     try {
-                        node = tx.getNodeById(stack.pop());
+                        node = tx.getNodeByElementId(stack.pop());
                     } catch (NotFoundException e) {
                         continue;
                     }
@@ -219,7 +219,7 @@ public class TxCell {
                     for (Relationship relationship : node.getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
                         org.neo4j.graphdb.Node parent = relationship.getStartNode();
                         thisRoot = parent;
-                        stack.push(parent.getId());
+                        stack.push(parent.getElementId());
                     }
                     //删除父节点及关系
                     for (Relationship r : node.getRelationships()) {

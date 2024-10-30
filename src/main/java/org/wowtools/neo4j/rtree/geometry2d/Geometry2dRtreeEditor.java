@@ -57,8 +57,8 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
                                                String geometryName) {
         RtreeEditor rtreeEditor = RtreeEditor.create(graphdb, commitLimit, name, mMin, mMax);
         try {
-            long metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
-            Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeById(metadataNodeId);
+            String metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
+            Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeByElementId(metadataNodeId);
             metadataNode.setProperty(Constant.geometryNameKey, geometryName);
             Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor);
             return geometry2dRtreeEditor;
@@ -84,8 +84,8 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
                                                     String geometryName) {
         RtreeEditor rtreeEditor = RtreeEditor.getOrCreate(graphdb, commitLimit, name, mMin, mMax);
         try {
-            long metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
-            Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeById(metadataNodeId);
+            String metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
+            Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeByElementId(metadataNodeId);
             if (!metadataNode.hasProperty(Constant.geometryNameKey)) {
                 metadataNode.setProperty(Constant.geometryNameKey, geometryName);
             }

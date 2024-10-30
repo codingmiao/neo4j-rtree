@@ -136,6 +136,6 @@ public interface Node {
      *
      * @return
      */
-    long getNeoNodeId();
+    String getNeoNodeId();
 
 }

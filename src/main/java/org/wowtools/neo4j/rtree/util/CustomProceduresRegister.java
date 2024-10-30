@@ -20,9 +20,9 @@ public class CustomProceduresRegister {
     public static void registerProcedures(GraphDatabaseService graphDb, Class<?> procedureClass) {
         GlobalProcedures globalProcedures = ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency(GlobalProcedures.class);
         try {
-            globalProcedures.registerProcedure(procedureClass, true);
-            globalProcedures.registerFunction(procedureClass, true);
-            globalProcedures.registerAggregationFunction(procedureClass, true);
+            globalProcedures.registerProcedure(procedureClass);
+            globalProcedures.registerFunction(procedureClass);
+            globalProcedures.registerAggregationFunction(procedureClass);
         } catch (KernelException e) {
             throw new RuntimeException("while registering " + procedureClass, e);
         }

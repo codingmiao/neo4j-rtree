@@ -36,8 +36,8 @@ import java.util.Comparator;
 public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
 
 
-    public static NodeOfAxialSplitLeaf getFromNeo(RectBuilder builder, long neoId, TxCell txCell) {
-        return new NodeOfAxialSplitLeaf(builder, txCell.getTx().getNodeById(neoId), txCell);
+    public static NodeOfAxialSplitLeaf getFromNeo(RectBuilder builder, String neoId, TxCell txCell) {
+        return new NodeOfAxialSplitLeaf(builder, txCell.getTx().getNodeByElementId(neoId), txCell);
     }
 
     protected NodeOfAxialSplitLeaf(final RectBuilder builder, org.neo4j.graphdb.Node cacheNode, TxCell txCell) {
@@ -116,7 +116,7 @@ public final class NodeOfAxialSplitLeaf extends NodeOfLeaf {
     }
 
     @Override
-    public long getNeoNodeId() {
-        return cacheNode.getNode().getId();
+    public String getNeoNodeId() {
+        return cacheNode.getNode().getElementId();
     }
 }

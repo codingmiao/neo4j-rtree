@@ -23,7 +23,7 @@ public class CacheNode {
         }
     };
 
-    private final long nodeId;
+    private final String nodeId;
     private Node node;
 
     private final TxCell txCell;
@@ -44,7 +44,7 @@ public class CacheNode {
     public final NodeType nodeType;
 
 
-    public CacheNode(long nodeId, TxCell txCell, NodeType nodeType) {
+    public CacheNode(String nodeId, TxCell txCell, NodeType nodeType) {
         this.nodeId = nodeId;
         this.txCell = txCell;
         this.nodeType = nodeType;
@@ -146,10 +146,10 @@ public class CacheNode {
             int mMax = txCell.getmMax();
             children = new org.wowtools.neo4j.rtree.internal.edit.Node[mMax];
             int i = 0;
-            HashSet<Long> added = new HashSet<>();
+            HashSet<String> added = new HashSet<>();
             for (Relationship relationship : _node().getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
-                children[i] = txCell.getNodeFromNeo4j(relationship.getEndNodeId());
-                if (!added.add(relationship.getEndNodeId())) {
+                children[i] = txCell.getNodeFromNeo4j(relationship.getEndNode().getElementId());
+                if (!added.add(relationship.getEndNode().getElementId())) {
                     throw new RuntimeException();
                 }
                 i++;
@@ -292,7 +292,7 @@ public class CacheNode {
 
     private Node _node() {
         if (null == node) {
-            node = txCell.getTx().getNodeById(nodeId);
+            node = txCell.getTx().getNodeByElementId(nodeId);
         }
         return node;
     }

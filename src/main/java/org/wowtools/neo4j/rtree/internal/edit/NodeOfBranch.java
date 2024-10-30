@@ -42,14 +42,14 @@ public final class NodeOfBranch implements Node {
 
     private final TxCell txCell;
 
-    public static NodeOfBranch getFromNeo(RectBuilder builder, long neoId, TxCell txCell) {
-        org.neo4j.graphdb.Node cacheNode = txCell.getTx().getNodeById(neoId);
+    public static NodeOfBranch getFromNeo(RectBuilder builder, String neoId, TxCell txCell) {
+        org.neo4j.graphdb.Node cacheNode = txCell.getTx().getNodeByElementId(neoId);
         return new NodeOfBranch(builder, cacheNode, txCell);
     }
 
     private NodeOfBranch(RectBuilder builder, org.neo4j.graphdb.Node node, TxCell txCell) {
         this.builder = builder;
-        this.cacheNode = txCell.getNode(node.getId());
+        this.cacheNode = txCell.getNode(node.getElementId());
         this.mMax = txCell.getmMax();
         this.mMin = txCell.getmMin();
         if (null == cacheNode) {
@@ -343,8 +343,8 @@ public final class NodeOfBranch implements Node {
 
 
     @Override
-    public long getNeoNodeId() {
-        return cacheNode.getNode().getId();
+    public String getNeoNodeId() {
+        return cacheNode.getNode().getElementId();
     }
 
 }

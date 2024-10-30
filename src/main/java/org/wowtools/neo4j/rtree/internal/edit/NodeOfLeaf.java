@@ -44,7 +44,7 @@ abstract class NodeOfLeaf implements Node {
 
     protected NodeOfLeaf(final RectBuilder builder, org.neo4j.graphdb.Node node, TxCell txCell) {
         this.txCell = txCell;
-        this.cacheNode = txCell.getNode(node.getId());
+        this.cacheNode = txCell.getNode(node.getElementId());
 
         this.mMin = txCell.getmMin();
         this.mMax = txCell.getmMax();
