@@ -57,7 +57,7 @@ public class CacheNode {
             _node().setProperty("size", size);
         }
 
-        if (changedKey.size() != 0) {
+        if (!changedKey.isEmpty()) {
             Node node = _node();
             for (String k : changedKey) {
                 Object v = properties.get(k);
@@ -111,7 +111,7 @@ public class CacheNode {
             }
         }
         //不在缓存中的查图库
-        if (notInCacheKeys.size() > 0) {
+        if (!notInCacheKeys.isEmpty()) {
             String[] queryKeys = new String[notInCacheKeys.size()];
             notInCacheKeys.toArray(queryKeys);
             Map<String, Object> np = _node().getProperties(queryKeys);
@@ -240,7 +240,7 @@ public class CacheNode {
                 }
                 double[] eMaxI = (double[]) properties.get("entryMax" + i);
                 RectNd e = new RectNd(new PointNd(eMinI), new PointNd(eMaxI));
-                e.setDataNodeId((long) properties.get("entryDataId" + i));
+                e.setDataNodeId((String) properties.get("entryDataId" + i));
                 entry[i] = e;
 
             }

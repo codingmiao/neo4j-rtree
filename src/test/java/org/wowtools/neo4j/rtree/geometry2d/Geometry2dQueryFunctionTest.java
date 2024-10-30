@@ -46,7 +46,7 @@ public class Geometry2dQueryFunctionTest {
                 Node dataNode = txCell.getTx().createNode();
                 dataNode.setProperty("name", "node" + i);
                 dataNode.setProperty(geometryName, wkb);
-                rtreeEditor.add(dataNode.getId(), geometry);
+                rtreeEditor.add(dataNode.getElementId(), geometry);
             }
         }
 

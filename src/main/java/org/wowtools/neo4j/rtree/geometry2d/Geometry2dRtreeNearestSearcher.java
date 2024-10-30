@@ -63,7 +63,7 @@ public class Geometry2dRtreeNearestSearcher {
         }
         NearestNeighbour<GeometryDistanceResult> nearestNeighbour = new NearestNeighbour<>(filter, maxHits, pointNd) {
             @Override
-            public GeometryDistanceResult createDistanceResult(PointNd pointNd, long dataNodeId) {
+            public GeometryDistanceResult createDistanceResult(PointNd pointNd, String dataNodeId) {
                 return GeometryDistanceResult.newInstance(tx, geometryName, wkbReader, pointNd, dataNodeId);
             }
         };

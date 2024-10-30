@@ -52,9 +52,9 @@ public class Geometry2dRtreeNearestSearcherTest {
                 byte[] wkb = wkbWriter.write(geometry);
                 Node dataNode = txCell.getTx().createNode();
                 dataNode.setProperty(geometryName, wkb);
-                DataNodeCell dataNodeCell = new DataNodeCell(dataNode.getId(), geometry);
+                DataNodeCell dataNodeCell = new DataNodeCell(dataNode.getElementId(), geometry);
                 dataNodeCells[i] = dataNodeCell;
-                rtreeEditor.add(dataNode.getId(), geometry);
+                rtreeEditor.add(dataNode.getElementId(), geometry);
             }
         }
         // end add
@@ -74,10 +74,10 @@ public class Geometry2dRtreeNearestSearcherTest {
     }
 
     private static final class DataNodeCell {
-        private final long dataNodeId;
+        private final String dataNodeId;
         private final Geometry geometry;
 
-        public DataNodeCell(long dataNodeId, Geometry geometry) {
+        public DataNodeCell(String dataNodeId, Geometry geometry) {
             this.dataNodeId = dataNodeId;
             this.geometry = geometry;
         }

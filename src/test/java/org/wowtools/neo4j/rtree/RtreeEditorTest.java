@@ -58,7 +58,7 @@ public class RtreeEditorTest {
 
 
             RectNd rect2d = new RectNd(new PointNd(new double[]{xmin, ymin}), new PointNd(new double[]{xmax, ymax}));
-            rect2d.setDataNodeId(i);
+            rect2d.setDataNodeId(String.valueOf(i));
             rectNds[i] = rect2d;
 
             Polygon bbox1 = gf.createPolygon(new Coordinate[]{
@@ -151,7 +151,7 @@ public class RtreeEditorTest {
             PointNd p1 = new PointNd(new double[]{x1, y1});
             searcher.intersects(new RectNd(p0, p1), tx, myVisitor);
         }
-        System.out.println("update " + myVisitor.num+ ",cost " + t1);
+        System.out.println("update " + myVisitor.num + ",cost " + t1);
         Assert.assertEquals(resNum, myVisitor.num);
         // end update
 
@@ -184,7 +184,7 @@ public class RtreeEditorTest {
         int num;
 
         @Override
-        public boolean visit(long nodeId) {
+        public boolean visit(String nodeId) {
             num++;
             return false;
         }

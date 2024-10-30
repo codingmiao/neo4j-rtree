@@ -18,13 +18,13 @@ public class GeometryDistanceResult extends DistanceResult {
 
     private final Geometry geometry;
 
-    public GeometryDistanceResult(double dist, long dataNodeId, Geometry geometry) {
+    public GeometryDistanceResult(double dist, String dataNodeId, Geometry geometry) {
         super(dist, dataNodeId);
         this.geometry = geometry;
     }
 
-    public static GeometryDistanceResult newInstance(Transaction tx, String geometryName, WKBReader wkbReader, PointNd pointNd, long dataNodeId) {
-        Node node = tx.getNodeById(dataNodeId);
+    public static GeometryDistanceResult newInstance(Transaction tx, String geometryName, WKBReader wkbReader, PointNd pointNd, String dataNodeId) {
+        Node node = tx.getNodeByElementId(dataNodeId);
         byte[] wkb = (byte[]) node.getProperty(geometryName);
         Geometry geometry;
         try {

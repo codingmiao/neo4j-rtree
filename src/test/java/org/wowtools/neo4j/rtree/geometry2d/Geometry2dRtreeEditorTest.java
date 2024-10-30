@@ -59,13 +59,13 @@ public class Geometry2dRtreeEditorTest {
                 byte[] wkb = wkbWriter.write(geometry);
                 Node dataNode = txCell.getTx().createNode();
                 dataNode.setProperty(geometryName, wkb);
-                DataNodeCell dataNodeCell = new DataNodeCell(dataNode.getId(), geometry);
+                DataNodeCell dataNodeCell = new DataNodeCell(dataNode.getElementId(), geometry);
                 if (inputGeometry.intersects(geometry)) {
                     intersectDataNodeCells.add(dataNodeCell);
                     resNum++;
                 }
                 dataNodeCells[i] = dataNodeCell;
-                rtreeEditor.add(dataNode.getId(), geometry);
+                rtreeEditor.add(dataNode.getElementId(), geometry);
             }
         }
         MyVisitor myVisitor = new MyVisitor();
@@ -102,7 +102,7 @@ public class Geometry2dRtreeEditorTest {
             for (int i = updateStart; i < intersectDataNodeCells.size(); i++) {
                 DataNodeCell intersectDataNodeCell = intersectDataNodeCells.get(i);
 
-                Node dataNode = txCell.getTx().getNodeById(intersectDataNodeCell.dataNodeId);
+                Node dataNode = txCell.getTx().getNodeByElementId(intersectDataNodeCell.dataNodeId);
 
                 byte[] oldWkb = (byte[]) dataNode.getProperty(geometryName);
                 Geometry oldGeometry = wkbReader.read(oldWkb);
@@ -138,17 +138,17 @@ public class Geometry2dRtreeEditorTest {
         int num;
 
         @Override
-        public boolean visit(long nodeId, Geometry geometry) {
+        public boolean visit(String nodeId, Geometry geometry) {
             num++;
             return false;
         }
     }
 
     private static final class DataNodeCell {
-        private final long dataNodeId;
+        private final String dataNodeId;
         private final Geometry geometry;
 
-        public DataNodeCell(long dataNodeId, Geometry geometry) {
+        public DataNodeCell(String dataNodeId, Geometry geometry) {
             this.dataNodeId = dataNodeId;
             this.geometry = geometry;
         }

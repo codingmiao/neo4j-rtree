@@ -115,7 +115,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param dataNodeId 数据节点neo4j id
      * @param geometry   数据节点geometry
      */
-    public void add(long dataNodeId, Geometry geometry) {
+    public void add(String dataNodeId, Geometry geometry) {
         RectNd rectNd = GeometryBbox.getBbox(geometry).toRect2d();
         rectNd.setDataNodeId(dataNodeId);
         rtreeEditor.add(rectNd);
@@ -127,7 +127,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param dataNodeId 被移除的数据节点neo4j id
      * @param geometry   被移除的数据节点geometry
      */
-    public void remove(long dataNodeId, Geometry geometry) {
+    public void remove(String dataNodeId, Geometry geometry) {
         RectNd rectNd = GeometryBbox.getBbox(geometry).toRect2d();
         rectNd.setDataNodeId(dataNodeId);
         rtreeEditor.remove(rectNd);
@@ -140,7 +140,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param oldGeometry 旧的的geometry
      * @param newGeometry 修改后的geometry
      */
-    public void update(long dataNodeId, Geometry oldGeometry, Geometry newGeometry) {
+    public void update(String dataNodeId, Geometry oldGeometry, Geometry newGeometry) {
         RectNd oldRectNd = GeometryBbox.getBbox(oldGeometry).toRect2d();
         oldRectNd.setDataNodeId(dataNodeId);
         RectNd newRectNd = GeometryBbox.getBbox(newGeometry).toRect2d();

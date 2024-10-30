@@ -31,7 +31,7 @@ public class RtreeIntersectsSearcherPerformanceTest {
                 double ymax = ymin + r.nextDouble() * 0.1;
 
                 RectNd rect2d = new RectNd(new PointNd(new double[]{xmin, ymin}), new PointNd(new double[]{xmax, ymax}));
-                rect2d.setDataNodeId(i);
+                rect2d.setDataNodeId(String.valueOf(i));
                 rtreeEditor.add(rect2d);
             }
         }
@@ -79,7 +79,7 @@ public class RtreeIntersectsSearcherPerformanceTest {
         int n = 0;
 
         @Override
-        public boolean visit(long nodeId) {
+        public boolean visit(String nodeId) {
             n++;
             return false;
         }

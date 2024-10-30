@@ -56,7 +56,7 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
      * @param dataNodeId dataNodeId
      * @return DistanceResult对象
      */
-    public abstract T createDistanceResult(PointNd pointNd, long dataNodeId);
+    public abstract T createDistanceResult(PointNd pointNd, String dataNodeId);
 
     /**
      * @return the nearest neighbour
@@ -113,7 +113,7 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
         }
         Map<String, Object> properties = node.getProperties(keys);
         properties.forEach((k, v) -> {
-            long dataNodeId = (long) v;
+            String dataNodeId = (String) v;
             T dr = createDistanceResult(pointNd, dataNodeId);
             double dist = dr.getDist();
             if (filter.accept(dr)) {

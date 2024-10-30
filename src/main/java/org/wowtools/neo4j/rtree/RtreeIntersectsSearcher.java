@@ -25,11 +25,11 @@ import java.util.concurrent.locks.Lock;
 public class RtreeIntersectsSearcher {
 
 
-    private final long metadataNodeId;
+    private final String metadataNodeId;
     private final Lock readLock;
 
 
-    private RtreeIntersectsSearcher(long metadataNodeId, Lock readLock) {
+    private RtreeIntersectsSearcher(String metadataNodeId, Lock readLock) {
         this.metadataNodeId = metadataNodeId;
         this.readLock = readLock;
     }
@@ -46,7 +46,7 @@ public class RtreeIntersectsSearcher {
         if (null == metadataNode) {
             throw new RuntimeException("索引 " + name + " 不存在");
         }
-        long metadataNodeId = metadataNode.getId();
+        String metadataNodeId = metadataNode.getElementId();
         Lock readLock = RtreeLock.getUseReadWriteLock(name).readLock();
         RtreeIntersectsSearcher rtreeIntersectsSearcher = new RtreeIntersectsSearcher(metadataNodeId, readLock);
         return rtreeIntersectsSearcher;
@@ -63,7 +63,7 @@ public class RtreeIntersectsSearcher {
     public void intersects(RectNd bbox, Transaction tx, BooleanDataNodeVisitor visitor) {
         readLock.lock();
         try {
-            Node metadataNode = tx.getNodeById(metadataNodeId);
+            Node metadataNode = tx.getNodeByElementId(metadataNodeId);
             Iterator<Relationship> iterator = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT).iterator();
             if (!iterator.hasNext()) {
                 return;
@@ -96,7 +96,7 @@ public class RtreeIntersectsSearcher {
                         double[] rMax = (double[]) properties.get("entryMax" + i);
                         RectNd dataMbr = new RectNd(rMin, rMax);
                         if (bbox.intersects(dataMbr)) {
-                            if (visitor.visit((long) properties.get("entryDataId" + i))) {
+                            if (visitor.visit((String) properties.get("entryDataId" + i))) {
                                 return;
                             }
                         }
@@ -109,7 +109,7 @@ public class RtreeIntersectsSearcher {
 
     }
 
-    public long getMetadataNodeId() {
+    public String getMetadataNodeId() {
         return metadataNodeId;
     }
 }

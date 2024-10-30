@@ -41,15 +41,15 @@ public class Geometry2dQueryFunction {
         }
 
         @Override
-        public boolean visit(long nodeId, Geometry geometry) {
+        public boolean visit(String nodeId, Geometry geometry) {
             Feature feature = node2Feature(tx, nodeId, geometry, propertyKeys);
             features.add(feature);
             return false;
         }
     }
 
-    private static Feature node2Feature(Transaction tx, long nodeId, Geometry geometry, String[] propertyKeys) {
-        Node node = tx.getNodeById(nodeId);
+    private static Feature node2Feature(Transaction tx, String nodeId, Geometry geometry, String[] propertyKeys) {
+        Node node = tx.getNodeByElementId(nodeId);
         Feature feature = new Feature();
         feature.setGeometry(geometry);
         if (null != propertyKeys && propertyKeys.length > 0) {

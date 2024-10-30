@@ -4,7 +4,9 @@ import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.internal.RtreeLock;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
+import org.wowtools.neo4j.rtree.internal.edit.GraphDbTxBuilder;
 import org.wowtools.neo4j.rtree.internal.edit.RTree;
+import org.wowtools.neo4j.rtree.internal.edit.TxBuilder;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
@@ -34,19 +36,19 @@ public class RtreeEditor implements AutoCloseable {
     }
 
     /**
-     * 获取索引
+     * 获取RtreeEditor
      *
-     * @param graphdb     neo4j db
+     * @param txBuilder     neo4j 事务构建接口
      * @param commitLimit 操作达到多少个顶点时执行提交操作
      * @param name        索引名
      * @return RtreeEditor
      */
-    public static RtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
+    public static RtreeEditor get(TxBuilder txBuilder, int commitLimit, String name){
         String metadataNodeId;
         int mMin;
         int mMax;
         synchronized (RtreeLock.getCreateIndexLock()) {
-            try (Transaction tx = graphdb.beginTx()) {
+            try (Transaction tx = txBuilder.beginTx()) {
                 Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
                 if (null == metadataNode) {
                     throw new RuntimeException("索引 " + name + " 不存在");
@@ -59,24 +61,37 @@ public class RtreeEditor implements AutoCloseable {
 
         }
 
-        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, txBuilder);
         RTree rTree = new RTree(new RectNd.Builder(), mMin, mMax, txCell, metadataNodeId);
         RtreeEditor rtreeEditor = new RtreeEditor(rTree, name, txCell);
         return rtreeEditor;
     }
 
     /**
-     * 新建索引
+     * 获取RtreeEditor
      *
      * @param graphdb     neo4j db
+     * @param commitLimit 操作达到多少个顶点时执行提交操作
+     * @param name        索引名
+     * @return RtreeEditor
+     */
+    public static RtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
+        TxBuilder txBuilder = new GraphDbTxBuilder(graphdb);
+        return get(txBuilder, commitLimit, name);
+    }
+
+    /**
+     * 新建索引
+     *
+     * @param txBuilder     txBuilder
      * @param commitLimit 操作达到多少个顶点时执行提交操作
      * @param name        索引名
      * @param mMin        索引中每个节点最小子节点数
      * @param mMax        索引中每个节点最大子节点数
      * @return RtreeEditor
      */
-    public static RtreeEditor create(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
-        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
+    public static RtreeEditor create(TxBuilder txBuilder, int commitLimit, String name, int mMin, int mMax) {
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, txBuilder);
         Node metadataNode;
         synchronized (RtreeLock.getCreateIndexLock()) {
             metadataNode = txCell.getTx().findNode(Labels.METADATA, "name", name);
@@ -96,6 +111,21 @@ public class RtreeEditor implements AutoCloseable {
     }
 
     /**
+     * 新建索引
+     *
+     * @param graphdb     neo4j db
+     * @param commitLimit 操作达到多少个顶点时执行提交操作
+     * @param name        索引名
+     * @param mMin        索引中每个节点最小子节点数
+     * @param mMax        索引中每个节点最大子节点数
+     * @return RtreeEditor
+     */
+    public static RtreeEditor create(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
+        TxBuilder txBuilder = new GraphDbTxBuilder(graphdb);
+        return create(txBuilder, commitLimit, name, mMin, mMax);
+    }
+
+    /**
      * 若指定名称的索引存在，获取索引，若不存在，则新建一个
      *
      * @param graphdb     neo4j db
@@ -106,7 +136,22 @@ public class RtreeEditor implements AutoCloseable {
      * @return RtreeEditor
      */
     public static RtreeEditor getOrCreate(GraphDatabaseService graphdb, int commitLimit, String name, int mMin, int mMax) {
-        TxCell txCell = new TxCell(commitLimit, mMin, mMax, graphdb);
+        TxBuilder txBuilder = new GraphDbTxBuilder(graphdb);
+        return getOrCreate(txBuilder, commitLimit, name, mMin, mMax);
+    }
+
+    /**
+     * 若指定名称的索引存在，获取索引，若不存在，则新建一个
+     *
+     * @param txBuilder     txBuilder
+     * @param commitLimit 操作达到多少个顶点时执行提交操作
+     * @param name        索引名
+     * @param mMin        索引中每个节点最小子节点数，如索引已存在则使用现有值，此输入值失效
+     * @param mMax        索引中每个节点最大子节点数，如索引已存在则使用现有值，此输入值失效
+     * @return RtreeEditor
+     */
+    public static RtreeEditor getOrCreate(TxBuilder txBuilder, int commitLimit, String name, int mMin, int mMax) {
+        TxCell txCell = new TxCell(commitLimit, mMin, mMax, txBuilder);
         Node metadataNode;
         boolean exist;
         synchronized (RtreeLock.getCreateIndexLock()) {
@@ -143,17 +188,29 @@ public class RtreeEditor implements AutoCloseable {
      * @param dataNodeVisitor 数据节点访问器，具体实现遇到数据节点该如何处置（例如将数据节点删除）
      */
     public static void drop(GraphDatabaseService graphdb, String name, VoidDataNodeVisitor dataNodeVisitor) {
+        TxBuilder txBuilder = new GraphDbTxBuilder(graphdb);
+        drop(txBuilder, name, dataNodeVisitor);
+    }
+
+    /**
+     * 删除索引
+     *
+     * @param txBuilder        txBuilder
+     * @param name            索引名
+     * @param dataNodeVisitor 数据节点访问器，具体实现遇到数据节点该如何处置（例如将数据节点删除）
+     */
+    public static void drop(TxBuilder txBuilder, String name, VoidDataNodeVisitor dataNodeVisitor) {
         //删掉METADATA
-        long rootId;
+        String rootId;
         int mMax;
-        try (Transaction tx = graphdb.beginTx()) {
+        try (Transaction tx = txBuilder.beginTx()) {
             synchronized (RtreeLock.getCreateIndexLock()) {
                 Node metadataNode = tx.findNode(Labels.METADATA, "name", name);
                 if (null == metadataNode) {
                     throw new RuntimeException("索引 " + name + " 不存在");
                 }
                 Relationship r = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT).iterator().next();
-                rootId = r.getEndNodeId();
+                rootId = r.getEndNode().getElementId();
                 r.delete();
                 mMax = (int) metadataNode.getProperty("mMax");
                 metadataNode.delete();
@@ -165,8 +222,8 @@ public class RtreeEditor implements AutoCloseable {
         for (int i = 0; i < mMax; i++) {
             keys[i] = "entryDataId" + i;
         }
-        try (Transaction tx = graphdb.beginTx()) {
-            Node node = tx.getNodeById(rootId);
+        try (Transaction tx = txBuilder.beginTx()) {
+            Node node = tx.getNodeByElementId(rootId);
             ArrayDeque<Node> stack = new ArrayDeque<>();
             stack.push(node);
             do {
@@ -181,7 +238,7 @@ public class RtreeEditor implements AutoCloseable {
                 } else if (label.equals(Labels.RTREE_LEAF.name())) {
                     Map<String, Object> entryDataIds = node.getProperties(keys);
                     entryDataIds.forEach((key, id) -> {
-                        dataNodeVisitor.visit((long) id);
+                        dataNodeVisitor.visit((String) id);
                     });
                 }
                 node.delete();

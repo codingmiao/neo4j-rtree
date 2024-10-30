@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.wowtools.neo4j.rtree.Neo4jDbManager;
+import org.wowtools.neo4j.rtree.internal.edit.GraphDbTxBuilder;
 import org.wowtools.neo4j.rtree.internal.edit.RTree;
 import org.wowtools.neo4j.rtree.internal.edit.SpatialSearches;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
@@ -43,7 +44,7 @@ public class Test {
         RectNd.Builder b = new RectNd.Builder();
         int mMin = 2;
         int mMax = 16;
-        TxCell txCell = new TxCell(200, mMin, mMax, neo4jDbManager.getGraphDb());
+        TxCell txCell = new TxCell(200, mMin, mMax, new GraphDbTxBuilder(neo4jDbManager.getGraphDb()));
         //构造测试数据
         double x0 = 0, x1 = 0.5, y0 = 0, y1 = 0.5;//查询范围
         int num = 32;//测试数据量 4
@@ -67,7 +68,7 @@ public class Test {
 
 
             RectNd rect2d = new RectNd(new PointNd(new double[]{xmin, ymin}), new PointNd(new double[]{xmax, ymax}));
-            rect2d.setDataNodeId(i);
+            rect2d.setDataNodeId(String.valueOf(i));
             rectNds[i] = rect2d;
 
             Polygon bbox1 = gf.createPolygon(new Coordinate[]{

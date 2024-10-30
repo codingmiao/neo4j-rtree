@@ -28,7 +28,7 @@ public class TxCell {
     private final int limit;
     private final int mMin;
     private final int mMax;
-    private final GraphDatabaseService graphDb;
+    private final TxBuilder txBuilder;
 
     private int num;
 
@@ -88,11 +88,11 @@ public class TxCell {
         }
     }
 
-    public TxCell(int limit,int mMin, int mMax, GraphDatabaseService graphDb) {
+    public TxCell(int limit,int mMin, int mMax, TxBuilder txBuilder) {
         this.limit = limit;
         this.mMin = mMin;
         this.mMax = mMax;
-        this.graphDb = graphDb;
+        this.txBuilder = txBuilder;
         tx = newTx();
     }
 
@@ -101,7 +101,7 @@ public class TxCell {
     }
 
     protected Transaction _newTx() {
-        return graphDb.beginTx();
+        return txBuilder.beginTx();
     }
 
     public Transaction newTx() {

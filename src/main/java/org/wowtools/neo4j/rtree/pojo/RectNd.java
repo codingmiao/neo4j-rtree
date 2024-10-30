@@ -15,7 +15,7 @@ public final class RectNd {
     /**
      * 连接到具体数据节点的id
      */
-    private long dataNodeId = -1;
+    private String dataNodeId = "";
 
     public RectNd(PointNd min, PointNd max) {
         this.min = min;
@@ -27,18 +27,18 @@ public final class RectNd {
         this.max = new PointNd(max);
     }
 
-    public long getDataNodeId() {
+    public String getDataNodeId() {
         return dataNodeId;
     }
 
-    public void setDataNodeId(long dataNodeId) {
+    public void setDataNodeId(String dataNodeId) {
         this.dataNodeId = dataNodeId;
     }
 
     @Override
     public boolean equals(Object o) {
         RectNd rectNd = (RectNd) o;
-        if (dataNodeId > 0 && dataNodeId == rectNd.dataNodeId) {
+        if (!dataNodeId.isEmpty() && dataNodeId.equals(rectNd.dataNodeId)) {
             return true;
         }
         return false;
@@ -46,7 +46,7 @@ public final class RectNd {
 
     @Override
     public int hashCode() {
-        return Long.hashCode(dataNodeId);
+        return dataNodeId.hashCode();
     }
 
     /**

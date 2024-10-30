@@ -35,7 +35,7 @@ public class Geometry2dRtreeIntersectsSearcher {
      */
     public static Geometry2dRtreeIntersectsSearcher get(Transaction tx, String name) {
         RtreeIntersectsSearcher rtreeIntersectsSearcher = RtreeIntersectsSearcher.get(tx, name);
-        String geometryName = (String) tx.getNodeById(rtreeIntersectsSearcher.getMetadataNodeId()).getProperty("geometryName");
+        String geometryName = (String) tx.getNodeByElementId(rtreeIntersectsSearcher.getMetadataNodeId()).getProperty("geometryName");
         return new Geometry2dRtreeIntersectsSearcher(geometryName, rtreeIntersectsSearcher);
     }
 
@@ -97,10 +97,10 @@ public class Geometry2dRtreeIntersectsSearcher {
         }
 
         @Override
-        public boolean visit(long nodeId) {
+        public boolean visit(String nodeId) {
             Geometry nodeGeometry;
             try {
-                Node node = tx.getNodeById(nodeId);
+                Node node = tx.getNodeByElementId(nodeId);
                 byte[] wkb = (byte[]) node.getProperty(geometryName);
                 nodeGeometry = wkbReader.read(wkb);
             } catch (Exception e) {

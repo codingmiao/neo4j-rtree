@@ -21,11 +21,11 @@ import java.util.concurrent.locks.Lock;
  */
 public class RtreeNearestSearcher<T extends DistanceResult> {
 
-    private final long metadataNodeId;
+    private final String metadataNodeId;
     private final Lock readLock;
 
 
-    private RtreeNearestSearcher(long metadataNodeId, Lock readLock) {
+    private RtreeNearestSearcher(String metadataNodeId, Lock readLock) {
         this.metadataNodeId = metadataNodeId;
         this.readLock = readLock;
     }
@@ -43,7 +43,7 @@ public class RtreeNearestSearcher<T extends DistanceResult> {
         if (null == metadataNode) {
             throw new RuntimeException("索引 " + name + " 不存在");
         }
-        long metadataNodeId = metadataNode.getId();
+        String metadataNodeId = metadataNode.getElementId();
         Lock readLock = RtreeLock.getUseReadWriteLock(name).readLock();
         RtreeNearestSearcher searcher = new RtreeNearestSearcher(metadataNodeId, readLock);
         return searcher;
@@ -60,7 +60,7 @@ public class RtreeNearestSearcher<T extends DistanceResult> {
     public List<T> nearest(NearestNeighbour<T> nearestNeighbour, Transaction tx) {
         readLock.lock();
         try {
-            Node metadataNode = tx.getNodeById(metadataNodeId);
+            Node metadataNode = tx.getNodeByElementId(metadataNodeId);
             Iterator<Relationship> iterator = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT).iterator();
             if (!iterator.hasNext()) {
                 return List.of();

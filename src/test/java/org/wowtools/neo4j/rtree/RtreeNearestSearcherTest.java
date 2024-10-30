@@ -44,7 +44,7 @@ public class RtreeNearestSearcherTest {
             double x1 = r.nextDouble();
             double y1 = r.nextDouble();
             RectNd rect2d = new RectNd(new PointNd(new double[]{x1, y1}), new PointNd(new double[]{x1, y1}));
-            rect2d.setDataNodeId(i);
+            rect2d.setDataNodeId(String.valueOf(i));
             rectNds[i] = rect2d;
         }
         try (RtreeEditor rtreeEditor = RtreeEditor.create(neo4jDbManager.getGraphDb(), 2000, indexName, 2, 8)) {
@@ -61,8 +61,8 @@ public class RtreeNearestSearcherTest {
             RtreeNearestSearcher searcher = RtreeNearestSearcher.get(tx, indexName);
             NearestNeighbour nearestNeighbour = new NearestNeighbour(hitNum, pt) {
                 @Override
-                public DistanceResult createDistanceResult(PointNd pointNd, long dataNodeId) {
-                    RectNd rectNd = rectNds[(int) dataNodeId];
+                public DistanceResult createDistanceResult(PointNd pointNd, String dataNodeId) {
+                    RectNd rectNd = rectNds[Integer.valueOf(dataNodeId)];
                     double dist = dist(rectNd);
                     return new DistanceResult(dist, dataNodeId);
                 }

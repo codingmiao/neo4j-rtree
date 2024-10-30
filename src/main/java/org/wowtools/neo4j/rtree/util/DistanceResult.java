@@ -9,7 +9,7 @@ package org.wowtools.neo4j.rtree.util;
  */
 public class DistanceResult {
     protected final double dist;
-    protected final long dataNodeId;
+    protected final String dataNodeId;
 
     /**
      * 构造方法需要传入距离和数据节点id
@@ -17,7 +17,7 @@ public class DistanceResult {
      * @param dist       距离
      * @param dataNodeId 数据节点id
      */
-    public DistanceResult(double dist, long dataNodeId) {
+    public DistanceResult(double dist, String dataNodeId) {
         this.dist = dist;
         this.dataNodeId = dataNodeId;
     }
@@ -27,7 +27,7 @@ public class DistanceResult {
         return dist;
     }
 
-    public long getDataNodeId() {
+    public String getDataNodeId() {
         return dataNodeId;
     }
 }

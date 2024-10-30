@@ -9,5 +9,5 @@ package org.wowtools.neo4j.rtree.util;
 @FunctionalInterface
 public interface VoidDataNodeVisitor {
 
-    void visit(long nodeId);
+    void visit(String nodeId);
 }

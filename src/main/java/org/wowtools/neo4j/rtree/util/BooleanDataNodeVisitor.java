@@ -15,5 +15,5 @@ public interface BooleanDataNodeVisitor {
      * @param nodeId 数据节点neo4j id
      * @return 返回true时，终止接下来的遍历
      */
-    boolean visit(long nodeId);
+    boolean visit(String nodeId);
 }
