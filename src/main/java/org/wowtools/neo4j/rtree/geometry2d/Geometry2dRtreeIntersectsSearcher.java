@@ -4,6 +4,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKBReader;
 import org.locationtech.jts.operation.predicate.RectangleIntersects;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.RtreeIntersectsSearcher;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
@@ -100,8 +101,18 @@ public class Geometry2dRtreeIntersectsSearcher {
         public boolean visit(String nodeId) {
             Geometry nodeGeometry;
             try {
-                Node node = tx.getNodeByElementId(nodeId);
-                byte[] wkb = (byte[]) node.getProperty(geometryName);
+                Node node = null;
+                try {
+                    node = tx.getNodeByElementId(nodeId);
+                } catch (NotFoundException e) {
+                }
+                if (null == node) {
+                    return false;
+                }
+                byte[] wkb = (byte[]) node.getProperty(geometryName,null);
+                if (null == wkb) {
+                    return false;
+                }
                 nodeGeometry = wkbReader.read(wkb);
             } catch (Exception e) {
                 throw new RuntimeException("解析node的geometry数据出错 ,节点id " + nodeId + " ,字段名" + geometryName, e);
