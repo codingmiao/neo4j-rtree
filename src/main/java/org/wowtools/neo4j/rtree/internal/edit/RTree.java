@@ -22,6 +22,7 @@ package org.wowtools.neo4j.rtree.internal.edit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
@@ -77,10 +78,12 @@ public final class RTree implements SpatialSearch {
 
         //查找root
         org.neo4j.graphdb.Node metadataNode = txCell.getTx().getNodeByElementId(metadataNodeId);
-        Iterator<Relationship> iterator = metadataNode.getRelationships(Direction.OUTGOING, Relationships.RTREE_METADATA_TO_ROOT).iterator();
+        ResourceIterable<Relationship> relationships = metadataNode.getRelationships(Direction.OUTGOING, Relationships.RTREE_METADATA_TO_ROOT);
+        Iterator<Relationship> iterator = relationships.iterator();
         if (iterator.hasNext()) {
             rootNodeId = iterator.next().getEndNode().getElementId();
         }
+        relationships.close();
     }
 
     @Override
@@ -131,9 +134,11 @@ public final class RTree implements SpatialSearch {
             rootNodeId = newRootId;
             Transaction tx = txCell.getTx();
             org.neo4j.graphdb.Node metadataNode = tx.getNodeByElementId(metadataNodeId);
-            for (Relationship relationship : metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT)) {
+            ResourceIterable<Relationship> relationships = metadataNode.getRelationships(Relationships.RTREE_METADATA_TO_ROOT);
+            for (Relationship relationship : relationships) {
                 relationship.delete();
             }
+            relationships.close();
             metadataNode.createRelationshipTo(tx.getNodeByElementId(rootNodeId), Relationships.RTREE_METADATA_TO_ROOT);
         }
     }

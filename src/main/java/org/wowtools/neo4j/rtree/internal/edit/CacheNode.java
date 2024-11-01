@@ -3,6 +3,7 @@ package org.wowtools.neo4j.rtree.internal.edit;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
@@ -147,13 +148,15 @@ public class CacheNode {
             children = new org.wowtools.neo4j.rtree.internal.edit.Node[mMax];
             int i = 0;
             HashSet<String> added = new HashSet<>();
-            for (Relationship relationship : _node().getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
+            ResourceIterable<Relationship> relationships = _node().getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD);
+            for (Relationship relationship : relationships) {
                 children[i] = txCell.getNodeFromNeo4j(relationship.getEndNode().getElementId());
                 if (!added.add(relationship.getEndNode().getElementId())) {
                     throw new RuntimeException();
                 }
                 i++;
             }
+            relationships.close();
         }
 
         return children;

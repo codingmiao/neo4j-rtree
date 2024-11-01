@@ -3,10 +3,6 @@ package org.wowtools.neo4j.rtree.internal.edit;
 import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
-import org.wowtools.neo4j.rtree.internal.edit.CacheNode;
-import org.wowtools.neo4j.rtree.internal.edit.NodeOfAxialSplitLeaf;
-import org.wowtools.neo4j.rtree.internal.edit.NodeOfBranch;
-import org.wowtools.neo4j.rtree.internal.edit.RectBuilder;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 
 import java.util.ArrayDeque;
@@ -88,7 +84,7 @@ public class TxCell {
         }
     }
 
-    public TxCell(int limit,int mMin, int mMax, TxBuilder txBuilder) {
+    public TxCell(int limit, int mMin, int mMax, TxBuilder txBuilder) {
         this.limit = limit;
         this.mMin = mMin;
         this.mMax = mMax;
@@ -138,12 +134,15 @@ public class TxCell {
         //RTREE_PARENT_TO_CHILD关系变更
         nodeParentMap.forEach((nid, parentNid) -> {
             if (null == parentNid) {//parentNid为空，删除旧关系
-                for (Relationship relationship : tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                ResourceIterable<Relationship> relationships = tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD);
+                for (Relationship relationship : relationships) {
                     relationship.delete();
                 }
+                relationships.close();
             } else {//parentNid非空，修改关系
                 boolean hasRelationship = false;//新的关系是否已存在
-                for (Relationship relationship : tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                ResourceIterable<Relationship> relationships = tx.getNodeByElementId(nid).getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD);
+                for (Relationship relationship : relationships) {
                     if (hasRelationship) {
                         relationship.delete();
                     } else {
@@ -154,6 +153,7 @@ public class TxCell {
                         }
                     }
                 }
+                relationships.close();
                 if (!hasRelationship) {
                     tx.getNodeByElementId(parentNid).createRelationshipTo(tx.getNodeByElementId(nid), Relationships.RTREE_PARENT_TO_CHILD);
                 }
@@ -193,17 +193,21 @@ public class TxCell {
                     continue;
                 }
                 //检查是否有关系 RTREE_METADATA_TO_ROOT
-                Iterator<Relationship> iterator = node.getRelationships(Direction.INCOMING, Relationships.RTREE_METADATA_TO_ROOT).iterator();
+                ResourceIterable<Relationship> relationships = node.getRelationships(Direction.INCOMING, Relationships.RTREE_METADATA_TO_ROOT);
+                Iterator<Relationship> iterator = relationships.iterator();
                 if (iterator.hasNext()) {
                     findRoot = true;
                     break;
                 }
+                relationships.close();
                 //将父节点丢进栈继续
-                for (Relationship relationship : node.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                relationships = node.getRelationships(Direction.INCOMING, Relationships.RTREE_PARENT_TO_CHILD);
+                for (Relationship relationship : relationships) {
                     org.neo4j.graphdb.Node parent = relationship.getStartNode();
                     thisRoot = parent;
                     stack.push(parent.getElementId());
                 }
+                relationships.close();
             } while (!stack.isEmpty());
             //未找到根节点，则删除所有本次遍历过的设备
             if (!findRoot) {
@@ -216,15 +220,19 @@ public class TxCell {
                         continue;
                     }
                     //遍历子节点
-                    for (Relationship relationship : node.getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD)) {
+                    ResourceIterable<Relationship> relationships = node.getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD);
+                    for (Relationship relationship : relationships) {
                         org.neo4j.graphdb.Node parent = relationship.getStartNode();
                         thisRoot = parent;
                         stack.push(parent.getElementId());
                     }
+                    relationships.close();
                     //删除父节点及关系
-                    for (Relationship r : node.getRelationships()) {
+                    relationships = node.getRelationships();
+                    for (Relationship r : relationships) {
                         r.delete();
                     }
+                    relationships.close();
                     node.delete();
                 } while (!stack.isEmpty());
             }
