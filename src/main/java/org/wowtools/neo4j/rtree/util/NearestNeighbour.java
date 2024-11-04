@@ -9,6 +9,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.internal.nearest.MinDist;
 import org.wowtools.neo4j.rtree.internal.nearest.MinDistComparator;
@@ -106,10 +107,10 @@ public abstract class NearestNeighbour<T extends DistanceResult> {
             DistanceResultNodeFilter filter,
             List<T> drs,
             int maxHits) {
-        int size = (int) node.getProperty("size");
+        int size = (int) node.getProperty(PropertyNames.size);
         String[] keys = new String[size];
         for (int i = 0; i < size; i++) {
-            keys[i] = "entryDataId" + i;
+            keys[i] = PropertyNames.entryDataId + i;
         }
         Map<String, Object> properties = node.getProperties(keys);
         properties.forEach((k, v) -> {

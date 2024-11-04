@@ -65,7 +65,7 @@ public class Geometry2dRtreeEditorTest {
                     resNum++;
                 }
                 dataNodeCells[i] = dataNodeCell;
-                rtreeEditor.add(dataNode.getElementId(), geometry);
+                rtreeEditor.add(dataNode.getElementId());
             }
         }
         MyVisitor myVisitor = new MyVisitor();
@@ -83,7 +83,7 @@ public class Geometry2dRtreeEditorTest {
         try (Geometry2dRtreeEditor rtreeEditor = Geometry2dRtreeEditor.get(neo4jDbManager.getGraphDb(), 2000, indexName)) {
             for (int i = 0; i < removeNum; i++) {
                 DataNodeCell dataNodeCell = intersectDataNodeCells.get(i);
-                rtreeEditor.remove(dataNodeCell.dataNodeId, dataNodeCell.geometry);
+                rtreeEditor.remove(dataNodeCell.dataNodeId);
             }
         }
         myVisitor = new MyVisitor();
@@ -118,7 +118,7 @@ public class Geometry2dRtreeEditorTest {
                     resNum--;
                 }
 
-                rtreeEditor.update(intersectDataNodeCell.dataNodeId, oldGeometry, newGeometry);
+                rtreeEditor.update(intersectDataNodeCell.dataNodeId, oldGeometry);
             }
         }
 

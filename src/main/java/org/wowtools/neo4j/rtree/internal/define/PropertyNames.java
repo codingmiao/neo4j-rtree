@@ -23,4 +23,23 @@ public class PropertyNames {
      */
     public static final String nodeType = "nodeType";
 
+
+    /**
+     * 叶子节点中的元素个数
+     */
+    public static final String size = "size";
+
+
+    /**
+     * 叶子节点中的元素个数
+     */
+    public static final String entryDataId = "entryDataId";
+    /**
+     * 叶子节点中的元素bbox前缀
+     */
+    public static final String entryMax = "entryMax";
+    /**
+     * 叶子节点中的元素bbox前缀
+     */
+    public static final String entryMin = "entryMin";
 }

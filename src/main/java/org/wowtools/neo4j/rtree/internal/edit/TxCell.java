@@ -159,7 +159,7 @@ public class TxCell {
                 }
             }
         });
-        neoGc();//gc
+//        neoGc();//gc  TODO去掉了事务内GC，改为外部定时调用
         tx.commit();//提交neo4j事务
         //清理内存中的对象
         num = 0;

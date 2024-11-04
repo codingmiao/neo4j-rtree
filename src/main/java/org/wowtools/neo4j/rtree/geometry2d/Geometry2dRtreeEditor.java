@@ -1,11 +1,15 @@
 package org.wowtools.neo4j.rtree.geometry2d;
 
+import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.wowtools.neo4j.rtree.RtreeEditor;
-import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.internal.edit.TxCell;
+import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
 
 /**
@@ -14,12 +18,16 @@ import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
  * @author liuyu
  * @date 2021/12/28
  */
+@Slf4j
 public class Geometry2dRtreeEditor implements AutoCloseable {
 
     private final RtreeEditor rtreeEditor;
+    private final String geometryName;
+    private final WKBReader wkbReader = new WKBReader();
 
-    private Geometry2dRtreeEditor(RtreeEditor rtreeEditor) {
+    private Geometry2dRtreeEditor(RtreeEditor rtreeEditor, String geometryName) {
         this.rtreeEditor = rtreeEditor;
+        this.geometryName = geometryName;
     }
 
     /**
@@ -33,8 +41,10 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
     public static Geometry2dRtreeEditor get(GraphDatabaseService graphdb, int commitLimit, String name) {
         RtreeEditor rtreeEditor = RtreeEditor.get(graphdb, commitLimit, name);
         try {
-            Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor);
-            return geometry2dRtreeEditor;
+            String metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
+            Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeByElementId(metadataNodeId);
+            String geometryName = (String) metadataNode.getProperty(Constant.geometryNameKey);
+            return new Geometry2dRtreeEditor(rtreeEditor, geometryName);
         } catch (Exception e) {
             throw new RuntimeException(e);
 
@@ -60,7 +70,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
             String metadataNodeId = rtreeEditor.getrTree().getMetadataNodeId();
             Node metadataNode = rtreeEditor.getTxCell().getTx().getNodeByElementId(metadataNodeId);
             metadataNode.setProperty(Constant.geometryNameKey, geometryName);
-            Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor);
+            Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor, geometryName);
             return geometry2dRtreeEditor;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -89,7 +99,8 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
             if (!metadataNode.hasProperty(Constant.geometryNameKey)) {
                 metadataNode.setProperty(Constant.geometryNameKey, geometryName);
             }
-            Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor);
+
+            Geometry2dRtreeEditor geometry2dRtreeEditor = new Geometry2dRtreeEditor(rtreeEditor, geometryName);
             return geometry2dRtreeEditor;
         } catch (Exception e) {
             rtreeEditor.close();
@@ -109,14 +120,38 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
     }
 
 
+    private RectNd getNodeRectNd(String dataNodeId) {
+        Node node;
+        try {
+            node = rtreeEditor.getTxCell().getTx().getNodeByElementId(dataNodeId);
+        } catch (NotFoundException e) {
+            log.info("node不存在 {}", dataNodeId);
+            return null;
+        }
+        byte[] wkb = (byte[]) node.getProperty(geometryName, null);
+        if (null == wkb) {
+            log.info("node没有geometry {} 字段 {}", geometryName, dataNodeId);
+            return null;
+        }
+        Geometry geometry;
+        try {
+            geometry = wkbReader.read(wkb);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        return GeometryBbox.getBbox(geometry).toRect2d();
+    }
+
     /**
      * 向索引中添加数据
      *
      * @param dataNodeId 数据节点neo4j id
-     * @param geometry   数据节点geometry
      */
-    public void add(String dataNodeId, Geometry geometry) {
-        RectNd rectNd = GeometryBbox.getBbox(geometry).toRect2d();
+    public void add(String dataNodeId) {
+        RectNd rectNd = getNodeRectNd(dataNodeId);
+        if (null == rectNd) {
+            return;
+        }
         rectNd.setDataNodeId(dataNodeId);
         rtreeEditor.add(rectNd);
     }
@@ -125,10 +160,9 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * 从索引中移除数据，注意不会删除数据节点，如需删除或其它操作应在自身业务代码中实现
      *
      * @param dataNodeId 被移除的数据节点neo4j id
-     * @param geometry   被移除的数据节点geometry
      */
-    public void remove(String dataNodeId, Geometry geometry) {
-        RectNd rectNd = GeometryBbox.getBbox(geometry).toRect2d();
+    public void remove(String dataNodeId) {
+        RectNd rectNd = getNodeRectNd(dataNodeId);
         rectNd.setDataNodeId(dataNodeId);
         rtreeEditor.remove(rectNd);
     }
@@ -137,13 +171,12 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * 修改现有数据
      *
      * @param dataNodeId  数据节点neo4j id
-     * @param oldGeometry 旧的的geometry
-     * @param newGeometry 修改后的geometry
+     * @param oldGeometry 节点之前的geometry
      */
-    public void update(String dataNodeId, Geometry oldGeometry, Geometry newGeometry) {
+    public void update(String dataNodeId, Geometry oldGeometry) {
         RectNd oldRectNd = GeometryBbox.getBbox(oldGeometry).toRect2d();
         oldRectNd.setDataNodeId(dataNodeId);
-        RectNd newRectNd = GeometryBbox.getBbox(newGeometry).toRect2d();
+        RectNd newRectNd = getNodeRectNd(dataNodeId);
         newRectNd.setDataNodeId(dataNodeId);
         rtreeEditor.update(oldRectNd, newRectNd);
     }

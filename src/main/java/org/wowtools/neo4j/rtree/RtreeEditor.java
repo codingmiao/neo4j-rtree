@@ -3,6 +3,7 @@ package org.wowtools.neo4j.rtree;
 import org.neo4j.graphdb.*;
 import org.wowtools.neo4j.rtree.internal.RtreeLock;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.internal.edit.GraphDbTxBuilder;
 import org.wowtools.neo4j.rtree.internal.edit.RTree;
@@ -220,7 +221,7 @@ public class RtreeEditor implements AutoCloseable {
         //删掉树上的节点
         String[] keys = new String[mMax];
         for (int i = 0; i < mMax; i++) {
-            keys[i] = "entryDataId" + i;
+            keys[i] = PropertyNames.entryDataId + i;
         }
         try (Transaction tx = txBuilder.beginTx()) {
             Node node = tx.getNodeByElementId(rootId);

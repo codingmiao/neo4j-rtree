@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.wowtools.neo4j.rtree.internal.RtreeLock;
 import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
@@ -90,13 +91,13 @@ public class RtreeIntersectsSearcher {
                     }
                 } else if (label.equals(Labels.RTREE_LEAF.name())) {
                     Map<String, Object> properties = node.getAllProperties();
-                    int size = (int) properties.get("size");
+                    int size = (int) properties.get(PropertyNames.size);
                     for (int i = 0; i < size; i++) {
-                        double[] rMin = (double[]) properties.get("entryMin" + i);
-                        double[] rMax = (double[]) properties.get("entryMax" + i);
+                        double[] rMin = (double[]) properties.get(PropertyNames.entryMin + i);
+                        double[] rMax = (double[]) properties.get(PropertyNames.entryMax + i);
                         RectNd dataMbr = new RectNd(rMin, rMax);
                         if (bbox.intersects(dataMbr)) {
-                            if (visitor.visit((String) properties.get("entryDataId" + i))) {
+                            if (visitor.visit((String) properties.get(PropertyNames.entryDataId + i))) {
                                 return;
                             }
                         }

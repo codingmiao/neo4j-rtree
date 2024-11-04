@@ -4,6 +4,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
+import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
@@ -49,13 +50,13 @@ public class CacheNode {
         this.nodeId = nodeId;
         this.txCell = txCell;
         this.nodeType = nodeType;
-        size = (int) _node().getProperty("size", 0);
+        size = (int) _node().getProperty(PropertyNames.size, 0);
         initSize = size;
     }
 
     public void commit() {
         if (initSize != size) {
-            _node().setProperty("size", size);
+            _node().setProperty(PropertyNames.size, size);
         }
 
         if (!changedKey.isEmpty()) {
@@ -230,20 +231,20 @@ public class CacheNode {
             int mMax = txCell.getmMax();
             List<String> keys = new ArrayList<>(mMax * 3);
             for (int i = 0; i < mMax; i++) {
-                keys.add("entryMin" + i);
-                keys.add("entryMax" + i);
-                keys.add("entryDataId" + i);
+                keys.add(PropertyNames.entryMin + i);
+                keys.add(PropertyNames.entryMax + i);
+                keys.add(PropertyNames.entryDataId + i);
             }
             Map<String, Object> properties = getProperties(keys);
             entry = new RectNd[mMax];
             for (int i = 0; i < mMax; i++) {
-                double[] eMinI = (double[]) properties.get("entryMin" + i);
+                double[] eMinI = (double[]) properties.get(PropertyNames.entryMin + i);
                 if (null == eMinI) {
                     continue;
                 }
-                double[] eMaxI = (double[]) properties.get("entryMax" + i);
+                double[] eMaxI = (double[]) properties.get(PropertyNames.entryMax + i);
                 RectNd e = new RectNd(new PointNd(eMinI), new PointNd(eMaxI));
-                e.setDataNodeId((String) properties.get("entryDataId" + i));
+                e.setDataNodeId((String) properties.get(PropertyNames.entryDataId + i));
                 entry[i] = e;
 
             }
@@ -254,13 +255,13 @@ public class CacheNode {
     public void setEntryAtI(int i, RectNd ei) {
         entry = getEntry();
         if (null == ei) {
-            setProperty("entryMin" + i, null);
-            setProperty("entryMax" + i, null);
-            setProperty("entryDataId" + i, null);
+            setProperty(PropertyNames.entryMin + i, null);
+            setProperty(PropertyNames.entryMax + i, null);
+            setProperty(PropertyNames.entryDataId + i, null);
         } else {
-            setProperty("entryMin" + i, ei.getMinXs());
-            setProperty("entryMax" + i, ei.getMaxXs());
-            setProperty("entryDataId" + i, ei.getDataNodeId());
+            setProperty(PropertyNames.entryMin + i, ei.getMinXs());
+            setProperty(PropertyNames.entryMax + i, ei.getMaxXs());
+            setProperty(PropertyNames.entryDataId + i, ei.getDataNodeId());
         }
         entry[i] = ei;
     }
@@ -269,11 +270,11 @@ public class CacheNode {
     public RectNd getMbr() {
         Node node = _node();
         if (null == mbr) {
-            double[] mbrMin = (double[]) node.getProperty("mbrMin", null);
+            double[] mbrMin = (double[]) node.getProperty(PropertyNames.mbrMin, null);
             if (null == mbrMin) {
                 return null;
             }
-            double[] mbrMax = (double[]) node.getProperty("mbrMax");
+            double[] mbrMax = (double[]) node.getProperty(PropertyNames.mbrMax);
             mbr = new RectNd(new PointNd(mbrMin), new PointNd(mbrMax));
         }
         return mbr;
@@ -281,13 +282,13 @@ public class CacheNode {
 
     public void setMbr(RectNd mbr) {
         if (mbr == null) {
-            setProperty("mbrMin", null);
-            setProperty("mbrMax", null);
+            setProperty(PropertyNames.mbrMin, null);
+            setProperty(PropertyNames.mbrMax, null);
         } else {
             double[] mbrMin = mbr.getMinXs();
             double[] mbrMax = mbr.getMaxXs();
-            setProperty("mbrMin", mbrMin);
-            setProperty("mbrMax", mbrMax);
+            setProperty(PropertyNames.mbrMin, mbrMin);
+            setProperty(PropertyNames.mbrMax, mbrMax);
         }
 
         this.mbr = mbr;

@@ -54,7 +54,7 @@ public class Geometry2dRtreeNearestSearcherTest {
                 dataNode.setProperty(geometryName, wkb);
                 DataNodeCell dataNodeCell = new DataNodeCell(dataNode.getElementId(), geometry);
                 dataNodeCells[i] = dataNodeCell;
-                rtreeEditor.add(dataNode.getElementId(), geometry);
+                rtreeEditor.add(dataNode.getElementId());
             }
         }
         // end add
