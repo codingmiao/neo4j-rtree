@@ -5,10 +5,7 @@ import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 事务外壳，用于在构建rtree时获取事务
@@ -89,20 +86,15 @@ public class TxCell {
         this.mMin = mMin;
         this.mMax = mMax;
         this.txBuilder = txBuilder;
-        tx = newTx();
+        newTx();
     }
 
     public RectBuilder getBuilder() {
         return builder;
     }
 
-    protected Transaction _newTx() {
-        return txBuilder.beginTx();
-    }
-
-    public Transaction newTx() {
-        tx = _newTx();
-        return tx;
+    private void newTx() {
+        tx = txBuilder.beginTx();
     }
 
     public Transaction getTx() {
@@ -159,7 +151,7 @@ public class TxCell {
                 }
             }
         });
-//        neoGc();//gc  TODO去掉了事务内GC，改为外部定时调用
+        neoGc();//gc
         tx.commit();//提交neo4j事务
         //清理内存中的对象
         num = 0;
@@ -174,7 +166,11 @@ public class TxCell {
      * 做一次“gc”操作，把cacheNodeMap中没有引用的node及其子节点从数据库删除掉
      */
     private void neoGc() {
+        Set<String> connedIds = new HashSet<>();
         cacheNodeMap.forEach((id, n) -> {
+            if (connedIds.contains(id)) {
+                return;
+            }
             org.neo4j.graphdb.Node node;
             try {
                 node = tx.getNodeByElementId(id);
@@ -183,15 +179,17 @@ public class TxCell {
                 return;
             }
             org.neo4j.graphdb.Node thisRoot = node;
-            ArrayDeque<String> stack = new ArrayDeque<>();
-            stack.push(node.getElementId());
+            ArrayDeque<org.neo4j.graphdb.Node> stack = new ArrayDeque<>();
+            List<org.neo4j.graphdb.Node> nodes = new LinkedList<>();
+            stack.push(node);
             boolean findRoot = false;
             do {
                 try {
-                    node = tx.getNodeByElementId(stack.pop());
+                    node = stack.pop();
                 } catch (NotFoundException e) {
                     continue;
                 }
+                nodes.add(node);
                 //检查是否有关系 RTREE_METADATA_TO_ROOT
                 ResourceIterable<Relationship> relationships = node.getRelationships(Direction.INCOMING, Relationships.RTREE_METADATA_TO_ROOT);
                 Iterator<Relationship> iterator = relationships.iterator();
@@ -205,17 +203,17 @@ public class TxCell {
                 for (Relationship relationship : relationships) {
                     org.neo4j.graphdb.Node parent = relationship.getStartNode();
                     thisRoot = parent;
-                    stack.push(parent.getElementId());
+                    stack.push(parent);
                 }
                 relationships.close();
             } while (!stack.isEmpty());
             //未找到根节点，则删除所有本次遍历过的设备
             if (!findRoot) {
                 stack = new ArrayDeque<>();
-                stack.push(thisRoot.getElementId());
+                stack.push(thisRoot);
                 do {
                     try {
-                        node = tx.getNodeByElementId(stack.pop());
+                        node = stack.pop();
                     } catch (NotFoundException e) {
                         continue;
                     }
@@ -224,7 +222,7 @@ public class TxCell {
                     for (Relationship relationship : relationships) {
                         org.neo4j.graphdb.Node parent = relationship.getStartNode();
                         thisRoot = parent;
-                        stack.push(parent.getElementId());
+                        stack.push(parent);
                     }
                     relationships.close();
                     //删除父节点及关系
@@ -235,6 +233,10 @@ public class TxCell {
                     relationships.close();
                     node.delete();
                 } while (!stack.isEmpty());
+            }else {
+                for (org.neo4j.graphdb.Node node1 : nodes) {
+                    connedIds.add(node1.getElementId());
+                }
             }
         });
     }

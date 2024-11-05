@@ -36,7 +36,7 @@ public class RtreeEditorTest {
         System.out.println("init");
         GeometryFactory gf = new GeometryFactory();
         double x0 = 0, x1 = 0.5, y0 = 0, y1 = 0.5;//查询范围
-        int num = 12345;//测试数据量 4
+        int num = 12345;//测试数据量
         String indexName = "testIndex";
         int resNum = 0;//手算出来的相交数
         Random r = new Random(233);
@@ -164,13 +164,13 @@ public class RtreeEditorTest {
         }
         try (Transaction tx = neo4jDbManager.getGraphDb().beginTx()) {
             tx.findNodes(Labels.METADATA).forEachRemaining(node -> {
-                throw new RuntimeException("drop未清理干净");
+                throw new RuntimeException("drop未清理干净 METADATA");
             });
             tx.findNodes(Labels.RTREE_BRANCH).forEachRemaining(node -> {
-                throw new RuntimeException("drop未清理干净");
+                throw new RuntimeException("drop未清理干净 RTREE_BRANCH");
             });
             tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {
-                throw new RuntimeException("drop未清理干净");
+                throw new RuntimeException("drop未清理干净 RTREE_LEAF");
             });
         }
 //        drop end

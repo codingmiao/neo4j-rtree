@@ -131,7 +131,7 @@ geometry2d 最邻近搜索 [Geometry2dRtreeNearestSearcher](https://github.com/c
             </dependency>
 ```
 
-注意，maven中央库的依赖用jdk11编译，所以如果你的项目使用了jdk8或其它版本，你可能需要自己编译一份适合于你的jdk的:
+注意，maven中央库的依赖用jdk21编译，所以如果你的项目使用了jdk8或其它版本，你可能需要自己编译一份适合于你的jdk的:
 
 clone & install
 
