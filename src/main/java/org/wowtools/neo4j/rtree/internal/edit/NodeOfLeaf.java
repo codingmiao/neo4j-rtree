@@ -75,7 +75,7 @@ abstract class NodeOfLeaf implements Node {
             } else {
                 mbr = tRect;
             }
-            cacheNode.setMbr((RectNd) mbr);
+            cacheNode.setMbr(mbr);
             cacheNode.setEntryAtI(size, t);
             size = size + 1;
             cacheNode.setSize(size);

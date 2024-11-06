@@ -76,6 +76,9 @@ public class Geometry2dRtreeEditorTest {
         System.out.println("add " + myVisitor.num);
         Assert.assertEquals(resNum, myVisitor.num);
         // end add
+//
+//        java.util.Scanner sin = new java.util.Scanner(System.in);
+//        sin.next();
 
         // remove
         int removeNum = (int) (resNum * 0.4);//移除40%的数据
@@ -104,9 +107,6 @@ public class Geometry2dRtreeEditorTest {
 
                 Node dataNode = txCell.getTx().getNodeByElementId(intersectDataNodeCell.dataNodeId);
 
-                byte[] oldWkb = (byte[]) dataNode.getProperty(geometryName);
-                Geometry oldGeometry = wkbReader.read(oldWkb);
-
                 double x = r.nextDouble();
                 double y = r.nextDouble();
                 Geometry newGeometry = geometryFactory.createPoint(new Coordinate(x, y));
@@ -118,7 +118,7 @@ public class Geometry2dRtreeEditorTest {
                     resNum--;
                 }
 
-                rtreeEditor.update(intersectDataNodeCell.dataNodeId, oldGeometry);
+                rtreeEditor.update(intersectDataNodeCell.dataNodeId);
             }
         }
 
@@ -130,6 +130,7 @@ public class Geometry2dRtreeEditorTest {
         System.out.println("update " + myVisitor.num);
         Assert.assertEquals(resNum, myVisitor.num);
         // end update
+
 
     }
 

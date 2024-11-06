@@ -23,4 +23,9 @@ public class Labels {
      * 树的叶子节点
      */
     public static final Label RTREE_LEAF = Label.label("RTREE_LEAF");
+
+    /**
+     * 树的数据节点 记录了数据节点的节点id和bbox，仅用于快速删除或修改数据
+     */
+    public static final Label RTREE_ENTITY = Label.label("RTREE_ENTITY");
 }

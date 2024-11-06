@@ -4,6 +4,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
+import org.wowtools.neo4j.rtree.internal.define.Labels;
 import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.define.Relationships;
 import org.wowtools.neo4j.rtree.pojo.PointNd;
@@ -55,12 +56,12 @@ public class CacheNode {
     }
 
     public void commit() {
+        Node node = _node();
         if (initSize != size) {
-            _node().setProperty(PropertyNames.size, size);
+            node.setProperty(PropertyNames.size, size);
         }
 
         if (!changedKey.isEmpty()) {
-            Node node = _node();
             for (String k : changedKey) {
                 Object v = properties.get(k);
                 if (v == empty) {
@@ -69,6 +70,43 @@ public class CacheNode {
                     node.setProperty(k, v);
                 }
             }
+        }
+
+        if (null != entry) {
+            //处理树的数据节点
+            ResourceIterable<Relationship> relationships = node.getRelationships(Direction.OUTGOING, Relationships.RTREE_LEAF_TO_ENTITY);
+            Map<Integer, Relationship> relationshipMap = new HashMap<>(entry.length);
+            for (Relationship relationship : relationships) {
+                int i = (int) relationship.getProperty(PropertyNames.index);
+                relationshipMap.put(i, relationship);
+            }
+            relationships.close();
+            for (int i = 0; i < entry.length; i++) {
+                Relationship relationship = relationshipMap.remove(i);
+                RectNd rectNd = entry[i];
+                if (null == rectNd) {
+                    if (null != relationship) {
+                        relationship.getEndNode().delete();
+                        relationship.delete();
+                    }
+                } else {
+                    Node entityNode;
+                    if (null == relationship) {
+                        entityNode = txCell.getTx().createNode(Labels.RTREE_ENTITY);
+                        relationship = node.createRelationshipTo(entityNode, Relationships.RTREE_LEAF_TO_ENTITY);
+                        relationship.setProperty(PropertyNames.index, i);
+                    } else {
+                        entityNode = relationship.getEndNode();
+                    }
+                    entityNode.setProperty(PropertyNames.entryDataId, properties.get(PropertyNames.entryDataId + i));
+                    entityNode.setProperty(PropertyNames.entryMax, properties.get(PropertyNames.entryMax + i));
+                    entityNode.setProperty(PropertyNames.entryMin, properties.get(PropertyNames.entryMin + i));
+                }
+            }
+            relationshipMap.forEach((i, relationship) -> {
+                relationship.getEndNode().delete();
+                relationship.delete();
+            });
         }
     }
 

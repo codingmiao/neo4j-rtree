@@ -8,6 +8,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.wowtools.neo4j.rtree.RtreeEditor;
+import org.wowtools.neo4j.rtree.internal.define.Labels;
+import org.wowtools.neo4j.rtree.internal.define.PropertyNames;
 import org.wowtools.neo4j.rtree.internal.edit.TxCell;
 import org.wowtools.neo4j.rtree.pojo.RectNd;
 import org.wowtools.neo4j.rtree.util.VoidDataNodeVisitor;
@@ -120,7 +122,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
     }
 
 
-    private RectNd getNodeRectNd(String dataNodeId) {
+    private RectNd getNodeRectNdFromDataNode(String dataNodeId) {
         Node node;
         try {
             node = rtreeEditor.getTxCell().getTx().getNodeByElementId(dataNodeId);
@@ -142,13 +144,19 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
         return GeometryBbox.getBbox(geometry).toRect2d();
     }
 
+    private RectNd getNodeRectNdFromEntityNode(String dataNodeId) {
+        Node node = rtreeEditor.getTxCell().getTx().findNode(Labels.RTREE_ENTITY, PropertyNames.entryDataId, dataNodeId);
+        RectNd rectNd = new RectNd((double[])node.getProperty(PropertyNames.entryMin),(double[]) node.getProperty(PropertyNames.entryMax));
+        return rectNd;
+    }
+
     /**
      * 向索引中添加数据
      *
      * @param dataNodeId 数据节点neo4j id
      */
     public void add(String dataNodeId) {
-        RectNd rectNd = getNodeRectNd(dataNodeId);
+        RectNd rectNd = getNodeRectNdFromDataNode(dataNodeId);
         if (null == rectNd) {
             return;
         }
@@ -162,7 +170,7 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * @param dataNodeId 被移除的数据节点neo4j id
      */
     public void remove(String dataNodeId) {
-        RectNd rectNd = getNodeRectNd(dataNodeId);
+        RectNd rectNd = getNodeRectNdFromDataNode(dataNodeId);
         rectNd.setDataNodeId(dataNodeId);
         rtreeEditor.remove(rectNd);
     }
@@ -171,12 +179,11 @@ public class Geometry2dRtreeEditor implements AutoCloseable {
      * 修改现有数据
      *
      * @param dataNodeId  数据节点neo4j id
-     * @param oldGeometry 节点之前的geometry
      */
-    public void update(String dataNodeId, Geometry oldGeometry) {
-        RectNd oldRectNd = GeometryBbox.getBbox(oldGeometry).toRect2d();
+    public void update(String dataNodeId) {
+        RectNd oldRectNd = getNodeRectNdFromEntityNode(dataNodeId);
         oldRectNd.setDataNodeId(dataNodeId);
-        RectNd newRectNd = getNodeRectNd(dataNodeId);
+        RectNd newRectNd = getNodeRectNdFromDataNode(dataNodeId);
         newRectNd.setDataNodeId(dataNodeId);
         rtreeEditor.update(oldRectNd, newRectNd);
     }

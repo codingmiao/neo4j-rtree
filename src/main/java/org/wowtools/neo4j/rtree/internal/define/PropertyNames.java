@@ -31,15 +31,20 @@ public class PropertyNames {
 
 
     /**
-     * 叶子节点中的元素个数
+     * 叶子节点中的元素真实数据节点id
      */
     public static final String entryDataId = "entryDataId";
     /**
-     * 叶子节点中的元素bbox前缀
+     * 叶子节点中的元素bbox
      */
     public static final String entryMax = "entryMax";
     /**
-     * 叶子节点中的元素bbox前缀
+     * 叶子节点中的元素bbox
      */
     public static final String entryMin = "entryMin";
+
+    /**
+     * 边上的数组序号，用于数据节点和叶子节点上的属性匹配
+     */
+    public static final String index = "index";
 }

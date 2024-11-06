@@ -172,6 +172,9 @@ public class RtreeEditorTest {
             tx.findNodes(Labels.RTREE_LEAF).forEachRemaining(node -> {
                 throw new RuntimeException("drop未清理干净 RTREE_LEAF");
             });
+            tx.findNodes(Labels.RTREE_ENTITY).forEachRemaining(node -> {
+                throw new RuntimeException("drop未清理干净 RTREE_ENTITY");
+            });
         }
 //        drop end
 

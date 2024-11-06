@@ -218,6 +218,14 @@ public class TxCell {
                         continue;
                     }
                     //遍历子节点
+                    //如果子节点是叶子节点，还要遍历删掉数据节点
+                    if (node.hasLabel(Labels.RTREE_LEAF)) {
+                        ResourceIterable<Relationship> relationships = node.getRelationships(Direction.OUTGOING, Relationships.RTREE_LEAF_TO_ENTITY);
+                        for (Relationship relationship : relationships){
+                            relationship.getEndNode().delete();
+                            relationship.delete();
+                        }
+                    }
                     ResourceIterable<Relationship> relationships = node.getRelationships(Direction.OUTGOING, Relationships.RTREE_PARENT_TO_CHILD);
                     for (Relationship relationship : relationships) {
                         org.neo4j.graphdb.Node parent = relationship.getStartNode();

@@ -38,7 +38,7 @@ public enum Relationships implements RelationshipType {
     RTREE_PARENT_TO_CHILD,
 
     /**
-     * 树的叶子节点到具体数据节点
+     * 树的叶子节点到数据节点
      */
-    RTREE_LEAF_TO_DATA
+    RTREE_LEAF_TO_ENTITY
 }
